@@ -1,29 +1,22 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Created: 10/16/2025
 
-### What is this repository for? ###
+Author: Song Zhang
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+README.md to be updated...
 
-### How do I get set up? ###
+This project is intended to be the MVP and final project for CS 322 at the University of Oregon.
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+The goal of this project is to implement the core functionality of another planned project intended
+to be built sometime in 2026 using React, Node.js (and Express), and MongoDB as a personal project.
 
-### Contribution guidelines ###
+This version will be built using the concepts taught in the CS 322 course and will use HTML, CSS,
+vanilla Javascript, Flask, and MongoDB. Additionally, it will use Docker.
 
-* Writing tests
-* Code review
-* Other guidelines
+In this MVP, users will be able to take turns drawing a prompt as other users attempt to guess your prompt.
+As a guesser, you will try to guess the drawing before anyone else guesses it while as a drawer, you
+are trying to get guessers to type your prompt out as quickly as possible.
 
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+Existing versions of this project idea can be played online already, but it's meant to be a minimally
+working version to aid in another planned project later on.
