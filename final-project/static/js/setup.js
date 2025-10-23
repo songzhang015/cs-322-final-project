@@ -1,0 +1,1 @@
+// setup.js - initializes the game and name + avatar creation

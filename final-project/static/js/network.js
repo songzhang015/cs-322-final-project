@@ -1,0 +1,1 @@
+// network.js - handles the data syncing between players

@@ -1,0 +1,1 @@
+// chat.js - handles chat and guessing prompts
