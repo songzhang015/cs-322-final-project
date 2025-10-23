@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "Hello, world!", 200
+    return render_template("index.html"), 200
 
 @app.errorhandler(404)
 def error_404(error):
