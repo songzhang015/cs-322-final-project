@@ -1,69 +1,89 @@
 // setup.js - initializes the game and name + avatar creation
 
 function init() {
-    let name = "";
+	let name = "";
 
 	const gameHeader = document.createElement("img");
-    gameHeader.src = "/static/images/logo.png";
-    gameHeader.alt = "drawing game";
-    gameHeader.classList.add("game-header");
+	gameHeader.src = "/static/images/logo.png";
+	gameHeader.alt = "drawing game";
+	gameHeader.classList.add("game-header");
 
-    const formContainer = document.createElement("div");
-    formContainer.classList.add("form-container");
+	const formContainer = document.createElement("div");
+	formContainer.classList.add("form-container");
 
-    const nameForm = document.createElement("form");
+	const nameForm = document.createElement("form");
 
-    const nameInput = document.createElement("input");
-    nameInput.classList.add("name-input");
-    nameInput.placeholder = "Enter your name";
+	const nameInput = document.createElement("input");
+	nameInput.classList.add("name-input");
+	nameInput.placeholder = "Enter your name";
 
-    const startBtn = document.createElement("button");
-    startBtn.classList.add("start-btn");
-    startBtn.textContent = "Start!"
+	const startBtn = document.createElement("button");
+	startBtn.classList.add("start-btn");
+	startBtn.textContent = "Start!";
 
-    startBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        name = nameInput.value;
-        if (1) { // If name is valid - not empty, not too long
-            nameForm.classList.add("move-off");
-            initAvatar(formContainer);
-        }
-    });
+	startBtn.addEventListener("click", function (e) {
+		e.preventDefault();
+		name = nameInput.value;
+		if (1) {
+			// If name is valid - not empty, not too long
+			nameForm.classList.add("move-off");
+			initAvatar(formContainer);
+		}
+	});
 
-    document.body.append(gameHeader);
-    document.body.append(formContainer);
-    formContainer.append(nameForm);
-    nameForm.append(nameInput);
-    nameForm.append(startBtn);
+	document.body.append(gameHeader);
+	document.body.append(formContainer);
+	formContainer.append(nameForm);
+	nameForm.append(nameInput);
+	nameForm.append(startBtn);
 }
 
 function initAvatar(formContainer) {
-    let avatar = "";
-    const avatarForm = document.createElement("form");
+	const avatarForm = document.createElement("form");
 
-    const avatarHeader = document.createElement("h1");
-    avatarHeader.classList.add("avatar-header");
-    avatarHeader.textContent = "Create your avatar";
+	const avatarHeader = document.createElement("h1");
+	avatarHeader.classList.add("avatar-header");
+	avatarHeader.textContent = "Create your avatar";
 
-    const avatarInput = document.createElement("input");
-    avatarInput.classList.add("name-input");
-    avatarInput.placeholder = "Enter your avatar";
+	const avatarContainer = document.createElement("div");
+	avatarContainer.classList.add("avatar-container");
 
-    const startBtn = document.createElement("button");
-    startBtn.classList.add("start-btn");
-    startBtn.textContent = "Play!"
+	const avatarDisplayContainer = document.createElement("div");
+	avatarDisplayContainer.classList.add("avatar-display-container");
 
-    startBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        avatar = avatarInput.value;
-        if (1) {}
-    });
+	const avatarSelectionContainer = document.createElement("div");
+	avatarSelectionContainer.classList.add("avatar-selection-container");
 
-    formContainer.append(avatarForm);
-    avatarForm.append(avatarHeader);
-    avatarForm.append(avatarInput);
-    avatarForm.append(startBtn);
-    avatarForm.classList.add("move-in");
+	const avatarDisplay = document.createElement("h1");
+	avatarDisplay.classList.add("avatar-display");
+	avatarDisplay.textContent = "Display";
+
+	const avatarEye = document.createElement("h2");
+	avatarEye.classList.add("avatar-eye");
+	avatarEye.textContent = "E";
+
+	const avatarMouth = document.createElement("h2");
+	avatarMouth.classList.add("avatar-eye");
+	avatarMouth.textContent = "M";
+
+	const avatarColor = document.createElement("h2");
+	avatarColor.classList.add("avatar-eye");
+	avatarColor.textContent = "C";
+
+	const startBtn = document.createElement("button");
+	startBtn.classList.add("start-btn");
+	startBtn.textContent = "Play!";
+
+	formContainer.append(avatarForm);
+	avatarForm.append(avatarHeader);
+	avatarForm.append(avatarContainer);
+	avatarForm.append(startBtn);
+	avatarContainer.append(avatarDisplayContainer);
+	avatarContainer.append(avatarSelectionContainer);
+
+	avatarDisplayContainer.append(avatarDisplay);
+	avatarSelectionContainer.append(avatarEye, avatarMouth, avatarColor);
+	avatarForm.classList.add("move-in");
 }
 
 document.addEventListener("DOMContentLoaded", () => {

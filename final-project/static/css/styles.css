@@ -1,8 +1,8 @@
 :root {
 	--bg-white: #f5f5f5;
-	--bg-purple-1: #6A5ACD; /* Purple Blue */
-	--bg-purple-2: #9966CC; /* Amethyst */
-	--main-orange: #FFC067; /* Pastel Orange */
+	--bg-purple-1: #6a5acd; /* Purple Blue */
+	--bg-purple-2: #9966cc; /* Amethyst */
+	--main-orange: #ffc067; /* Pastel Orange */
 }
 
 * {
@@ -29,16 +29,18 @@ body {
 	position: relative;
 	overflow: hidden;
 	width: 100vw;
-	height: 15rem;
+	height: 20rem;
 	display: flex;
-  	justify-content: center;
-  	align-items: center;
+	justify-content: center;
+	align-items: center;
 }
 
 form {
 	display: flex;
 	flex-direction: column;
 	position: absolute;
+	justify-content: center;
+	align-items: center;
 }
 
 .name-input {
@@ -70,13 +72,39 @@ form {
 	color: white;
 }
 
+.avatar-container {
+	border: 1px solid white;
+	display: flex;
+	min-height: 10rem;
+	gap: 3rem;
+}
+
+.avatar-display-container {
+	border: 1px solid red;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.avatar-selection-container {
+	border: 1px solid orange;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
 .move-off {
 	animation: moveOffScreen 3s forwards;
 }
 
 @keyframes moveOffScreen {
-  	0% { transform: translateX(0); }
-  	100% { transform: translateX(100vw); }
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(100vw);
+	}
 }
 
 .move-in {
@@ -84,6 +112,10 @@ form {
 }
 
 @keyframes moveInScreen {
-	0% { transform: translateX(-100vw); }
-  	100% { transform: translateX(0); }
+	0% {
+		transform: translateX(-100vw);
+	}
+	100% {
+		transform: translateX(0);
+	}
 }
