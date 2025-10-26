@@ -29,7 +29,7 @@ body {
 	position: relative;
 	overflow: hidden;
 	width: 100vw;
-	height: 20rem;
+	height: 30rem;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -84,6 +84,7 @@ form {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	width: 15rem;
 }
 
 .avatar-selection-container {
@@ -92,6 +93,22 @@ form {
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
+	gap: 1rem;
+}
+
+.avatar-eye, .avatar-mouth, .avatar-color {
+	border: 1px solid black;
+	width: 7.5rem;
+	height: 5rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 1rem;
+}
+
+.eye-preview, .mouth-preview, .color-preview {
+	border: 1px solid purple;
+	padding: 1rem;
 }
 
 .move-off {
