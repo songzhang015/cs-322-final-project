@@ -73,22 +73,32 @@ form {
 }
 
 .avatar-container {
-	border: 1px solid white;
 	display: flex;
 	min-height: 10rem;
 	gap: 3rem;
 }
 
 .avatar-display-container {
-	border: 1px solid red;
-	display: flex;
-	justify-content: center;
-	align-items: center;
+	position: relative;
 	width: 15rem;
 }
 
+.avatar-display,
+.eye-main,
+.mouth-main,
+.color-main {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.avatar-display {
+	z-index: 2;
+}
+
 .avatar-selection-container {
-	border: 1px solid orange;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -96,8 +106,9 @@ form {
 	gap: 1rem;
 }
 
-.avatar-eye, .avatar-mouth, .avatar-color {
-	border: 1px solid black;
+.avatar-eye,
+.avatar-mouth,
+.avatar-color {
 	width: 7.5rem;
 	height: 5rem;
 	display: flex;
@@ -106,13 +117,25 @@ form {
 	gap: 1rem;
 }
 
-.eye-preview, .mouth-preview, .color-preview {
-	border: 1px solid purple;
-	padding: 1rem;
+.eye-preview,
+.mouth-preview,
+.color-preview {
+	width: 4rem;
+	height: 4rem;
+}
+
+.eye-arrow,
+.mouth-arrow,
+.color-arrow {
+	cursor: pointer;
+	background: transparent;
+	font-size: 1.5rem;
+	border: none;
+	color: white;
 }
 
 .move-off {
-	animation: moveOffScreen 3s forwards;
+	animation: moveOffScreen 2.5s forwards;
 }
 
 @keyframes moveOffScreen {
@@ -125,7 +148,7 @@ form {
 }
 
 .move-in {
-	animation: moveInScreen 3s forwards;
+	animation: moveInScreen 2.5s forwards;
 }
 
 @keyframes moveInScreen {

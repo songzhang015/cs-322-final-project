@@ -54,36 +54,48 @@ function initAvatar(formContainer) {
 	const avatarSelectionContainer = document.createElement("div");
 	avatarSelectionContainer.classList.add("avatar-selection-container");
 
-	const avatarDisplay = document.createElement("h1");
+	const avatarDisplay = document.createElement("img");
 	avatarDisplay.classList.add("avatar-display");
-	avatarDisplay.textContent = "Display";
+	avatarDisplay.src = "static/images/avatar-skeleton.png";
 
 	const avatarEye = document.createElement("div");
 	avatarEye.classList.add("avatar-eye");
-    const eyePreview = document.createElement("h2");
-    eyePreview.classList.add("eye-preview");
-    eyePreview.textContent = "E";
-    const eyeArrow = document.createElement("h2");
-    eyeArrow.textContent = ">";
-    avatarEye.append(eyePreview, eyeArrow);
+	const eyeMain = document.createElement("img");
+	eyeMain.classList.add("eye-main");
+	eyeMain.src = "static/images/eyes/eye-avatar-1.png";
+	const eyePreview = document.createElement("img");
+	eyePreview.classList.add("eye-preview");
+	eyePreview.src = "static/images/eyes/eye-preview-1.png";
+	const eyeArrow = document.createElement("button");
+	eyeArrow.classList.add("eye-arrow");
+	eyeArrow.textContent = ">";
+	avatarEye.append(eyePreview, eyeArrow);
 
 	const avatarMouth = document.createElement("div");
 	avatarMouth.classList.add("avatar-mouth");
-    const mouthPreview = document.createElement("h2");
-    mouthPreview.classList.add("mouth-preview");
-    mouthPreview.textContent = "M";
-    const mouthArrow = document.createElement("h2");
-    mouthArrow.textContent = ">";
-    avatarMouth.append(mouthPreview, mouthArrow);
+	const mouthMain = document.createElement("img");
+	mouthMain.classList.add("mouth-main");
+	mouthMain.src = "static/images/mouths/mouth-avatar-1.png";
+	const mouthPreview = document.createElement("img");
+	mouthPreview.classList.add("mouth-preview");
+	mouthPreview.src = "static/images/mouths/mouth-preview-1.png";
+	const mouthArrow = document.createElement("button");
+	mouthArrow.classList.add("mouth-arrow");
+	mouthArrow.textContent = ">";
+	avatarMouth.append(mouthPreview, mouthArrow);
 
 	const avatarColor = document.createElement("div");
 	avatarColor.classList.add("avatar-color");
-    const colorPreview = document.createElement("h2");
-    colorPreview.classList.add("color-preview");
-    colorPreview.textContent = "C";
-    const colorArrow = document.createElement("h2");
-    colorArrow.textContent = ">";
-    avatarColor.append(colorPreview, colorArrow);
+	const colorMain = document.createElement("img");
+	colorMain.classList.add("color-main");
+	colorMain.src = "static/images/colors/color-avatar-white.png";
+	const colorPreview = document.createElement("img");
+	colorPreview.classList.add("color-preview");
+	colorPreview.src = "static/images/colors/color-preview-white.png";
+	const colorArrow = document.createElement("button");
+	colorArrow.classList.add("color-arrow");
+	colorArrow.textContent = ">";
+	avatarColor.append(colorPreview, colorArrow);
 
 	const startBtn = document.createElement("button");
 	startBtn.classList.add("start-btn");
@@ -96,18 +108,71 @@ function initAvatar(formContainer) {
 	avatarContainer.append(avatarDisplayContainer);
 	avatarContainer.append(avatarSelectionContainer);
 
-	avatarDisplayContainer.append(avatarDisplay);
+	avatarDisplayContainer.append(avatarDisplay, colorMain, eyeMain, mouthMain);
 	avatarSelectionContainer.append(avatarEye, avatarMouth, avatarColor);
 	avatarForm.classList.add("move-in");
+	initEyeController(eyeArrow, eyeMain, eyePreview);
+	initMouthController(mouthArrow, mouthMain, mouthPreview);
+	initColorController(colorArrow, colorMain, colorPreview);
 }
 
-function initColorController(arrow, displayDiv, previewDiv) {
-    // 9 colors, will cycle through avatar-main-[color] and avatar-preview-[color]
-    // as the file names
-    const colors = [
-        "red", "orange", "yellow", "green", "blue",
-        "purple", "white", "gray", "brown",
-    ]
+function initEyeController(arrow, avatarDiv, previewDiv) {
+	let eyeIdx = 1;
+
+	arrow.addEventListener("click", function (e) {
+		e.preventDefault();
+		if (eyeIdx === 6) {
+			eyeIdx = 1;
+		} else {
+			eyeIdx += 1;
+		}
+		previewDiv.src = `static/images/eyes/eye-preview-${eyeIdx}.png`;
+		avatarDiv.src = `static/images/eyes/eye-avatar-${eyeIdx}.png`;
+	});
+}
+
+function initMouthController(arrow, avatarDiv, previewDiv) {
+	let mouthIdx = 1;
+
+	arrow.addEventListener("click", function (e) {
+		e.preventDefault();
+		if (mouthIdx === 6) {
+			mouthIdx = 1;
+		} else {
+			mouthIdx += 1;
+		}
+		previewDiv.src = `static/images/mouths/mouth-preview-${mouthIdx}.png`;
+		avatarDiv.src = `static/images/mouths/mouth-avatar-${mouthIdx}.png`;
+	});
+}
+
+function initColorController(arrow, avatarDiv, previewDiv) {
+	// 9 colors, will cycle through color-main-[color] and color-preview-[color]
+	// as the file names
+	const colors = [
+		"white",
+		"red",
+		"orange",
+		"yellow",
+		"green",
+		"blue",
+		"purple",
+		"gray",
+		"brown",
+	];
+
+	let colorIdx = 0;
+
+	arrow.addEventListener("click", function (e) {
+		e.preventDefault();
+		if (colorIdx === 8) {
+			colorIdx = 0;
+		} else {
+			colorIdx += 1;
+		}
+		previewDiv.src = `static/images/colors/color-preview-${colors[colorIdx]}.png`;
+		avatarDiv.src = `static/images/colors/color-avatar-${colors[colorIdx]}.png`;
+	});
 }
 
 document.addEventListener("DOMContentLoaded", () => {
