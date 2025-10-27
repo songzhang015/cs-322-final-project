@@ -97,14 +97,19 @@ function initAvatar(formContainer) {
 	colorArrow.textContent = ">";
 	avatarColor.append(colorPreview, colorArrow);
 
-	const startBtn = document.createElement("button");
-	startBtn.classList.add("start-btn");
-	startBtn.textContent = "Play!";
+	const playBtn = document.createElement("button");
+	playBtn.classList.add("play-btn");
+	playBtn.textContent = "Play!";
+
+	playBtn.addEventListener("click", function (e) {
+		e.preventDefault();
+		initLoadingScreen();
+	});
 
 	formContainer.append(avatarForm);
 	avatarForm.append(avatarHeader);
 	avatarForm.append(avatarContainer);
-	avatarForm.append(startBtn);
+	avatarForm.append(playBtn);
 	avatarContainer.append(avatarDisplayContainer);
 	avatarContainer.append(avatarSelectionContainer);
 
@@ -175,6 +180,53 @@ function initColorController(arrow, avatarDiv, previewDiv) {
 	});
 }
 
+function initLoadingScreen() {
+	document.body.innerHTML = "";
+	let dots = 0;
+
+	const loadingText = document.createElement("p");
+	loadingText.classList.add("loading-text");
+	loadingText.textContent = "Connecting";
+	document.body.append(loadingText);
+
+	const interval = setInterval(() => {
+		dots = (dots + 1) % 4;
+		loadingText.textContent = "Connecting" + ".".repeat(dots);
+	}, 750);
+
+	setTimeout(() => {
+		clearInterval(interval);
+		loadingText.textContent = "Connected!";
+	}, 5000);
+
+	setTimeout(() => {
+		document.body.innerHTML = "";
+		initPlayScreen();
+	}, 6000);
+}
+
+function initPlayScreen() {
+	const playArea = document.createElement("div");
+	playArea.classList.add("play-area");
+	document.body.append(playArea);
+
+	const header = document.createElement("div");
+	header.classList.add("play-header");
+	playArea.append(header);
+
+	const scoreboard = document.createElement("div");
+	scoreboard.classList.add("play-scoreboard");
+	playArea.append(scoreboard);
+
+	const drawpad = document.createElement("div");
+	drawpad.classList.add("play-drawpad");
+	playArea.append(drawpad);
+
+	const chat = document.createElement("div");
+	chat.classList.add("play-chat");
+	playArea.append(chat);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-	init();
+	initPlayScreen();
 });

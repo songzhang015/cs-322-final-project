@@ -16,11 +16,11 @@ body {
 	background-color: var(--bg-purple-1);
 	display: flex;
 	flex-direction: column;
+	justify-content: center;
 	align-items: center;
 }
 
 .game-header {
-	margin-top: 2.5rem;
 	height: 5rem;
 	width: auto;
 }
@@ -33,6 +33,7 @@ body {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	margin-bottom: 10rem;
 }
 
 form {
@@ -51,7 +52,8 @@ form {
 	width: 16rem;
 }
 
-.start-btn {
+.start-btn,
+.play-btn {
 	background-color: transparent;
 	color: var(--main-orange);
 	padding: 0.5rem;
@@ -63,7 +65,8 @@ form {
 	border-radius: 6px;
 }
 
-.start-btn:hover {
+.start-btn:hover,
+.play-btn:hover {
 	cursor: pointer;
 }
 
@@ -158,4 +161,42 @@ form {
 	100% {
 		transform: translateX(0);
 	}
+}
+
+/* Past Menu Screen */
+.loading-text {
+	font-size: 2.5rem;
+	font-weight: bold;
+	color: white;
+}
+
+.play-area {
+	display: grid;
+	grid-template-rows: 4rem 1fr;
+	grid-template-columns: 14rem 1fr 18rem;
+	width: 80vw;
+	height: 72.5vh;
+	margin-bottom: 7.5rem;
+	background-color: rgb(255, 177, 177);
+}
+
+.play-scoreboard {
+	grid-row: 2;
+	grid-column: 1;
+	background-color: #cfc9ff;
+	border: 2px solid black;
+}
+
+.play-drawpad {
+	grid-row: 2;
+	grid-column: 2;
+	background-color: white;
+	border: 2px solid black;
+}
+
+.play-chat {
+	grid-row: 2;
+	grid-column: 3;
+	background-color: #fafea8;
+	border: 2px solid black;
 }
