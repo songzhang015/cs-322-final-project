@@ -1,4 +1,20 @@
 // setup.js - initializes the game and name + avatar creation
+import { connectToServer } from "./network.js";
+let nameInput;
+let eyeIdx = 1;
+let mouthIdx = 1;
+let colorIdx = 0;
+const colors = [
+	"white",
+	"red",
+	"orange",
+	"yellow",
+	"green",
+	"blue",
+	"purple",
+	"gray",
+	"brown",
+];
 
 function init() {
 	let name = "";
@@ -13,7 +29,7 @@ function init() {
 
 	const nameForm = document.createElement("form");
 
-	const nameInput = document.createElement("input");
+	nameInput = document.createElement("input");
 	nameInput.classList.add("name-input");
 	nameInput.placeholder = "Enter your name";
 
@@ -36,6 +52,10 @@ function init() {
 	formContainer.append(nameForm);
 	nameForm.append(nameInput);
 	nameForm.append(startBtn);
+}
+
+function generateUniqueId() {
+	return "id-" + Math.random().toString(36).slice(2, 11);
 }
 
 function initAvatar(formContainer) {
@@ -103,6 +123,21 @@ function initAvatar(formContainer) {
 
 	playBtn.addEventListener("click", function (e) {
 		e.preventDefault();
+		// Gather player data
+		const playerData = {
+			id: generateUniqueId(), // simple random string
+			name: nameInput.value, // player's name from input
+			avatar: {
+				eye: eyeIdx, // current selected eye
+				mouth: mouthIdx, // current selected mouth
+				color: colors[colorIdx], // current selected color
+			},
+		};
+
+		// Connect to server
+		connectToServer(playerData);
+
+		// Initialize loading screen
 		initLoadingScreen();
 	});
 
@@ -122,8 +157,6 @@ function initAvatar(formContainer) {
 }
 
 function initEyeController(arrow, avatarDiv, previewDiv) {
-	let eyeIdx = 1;
-
 	arrow.addEventListener("click", function (e) {
 		e.preventDefault();
 		if (eyeIdx === 6) {
@@ -137,8 +170,6 @@ function initEyeController(arrow, avatarDiv, previewDiv) {
 }
 
 function initMouthController(arrow, avatarDiv, previewDiv) {
-	let mouthIdx = 1;
-
 	arrow.addEventListener("click", function (e) {
 		e.preventDefault();
 		if (mouthIdx === 6) {
@@ -154,20 +185,6 @@ function initMouthController(arrow, avatarDiv, previewDiv) {
 function initColorController(arrow, avatarDiv, previewDiv) {
 	// 9 colors, will cycle through color-main-[color] and color-preview-[color]
 	// as the file names
-	const colors = [
-		"white",
-		"red",
-		"orange",
-		"yellow",
-		"green",
-		"blue",
-		"purple",
-		"gray",
-		"brown",
-	];
-
-	let colorIdx = 0;
-
 	arrow.addEventListener("click", function (e) {
 		e.preventDefault();
 		if (colorIdx === 8) {
@@ -228,5 +245,5 @@ function initPlayScreen() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-	initPlayScreen();
+	init();
 });
