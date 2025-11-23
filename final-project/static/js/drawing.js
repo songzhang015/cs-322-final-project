@@ -115,7 +115,7 @@ function solidifyEdges() {
     ctx.putImageData(img, 0, 0);
 }
 
-function colorsMatch(a, b, tolerance = 80) {
+function colorsMatch(a, b, tolerance = 6) {
     return (
         Math.abs(a[0] - b[0]) <= tolerance &&
         Math.abs(a[1] - b[1]) <= tolerance &&
@@ -135,7 +135,6 @@ function fillBucket(startX, startY) {
 
     // Convert currentColor into RGBA values
     ctx.fillStyle = currentColor;
-    ctx.fillRect(0, 0, 0, 0);
     const fill = ctx.fillStyle;
 
     // Extract fill color
@@ -158,7 +157,7 @@ function fillBucket(startX, startY) {
         let idx = (y * w + x) * 4;
 
         // Skip if not target color
-        if (!colorsMatch(data.slice(idx, idx + 4), targetColor, 80)) continue;
+        if (!colorsMatch(data.slice(idx, idx + 4), targetColor, 6)) continue;
 
         // Set pixel to fillColor
         data[idx] = fillColor[0];
