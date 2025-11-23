@@ -51,6 +51,30 @@ def handle_disconnect():
         emit("playerList", list(players.values()), broadcast=True)
         print(f"{name} disconnected. Total players: {len(players)}")
 
+@socketio.on("startPath")
+def handle_start_path(data):
+    emit("startPath", data, broadcast=True, include_self=False)
+
+@socketio.on("draw")
+def handle_draw(data):
+    emit("draw", data, broadcast=True, include_self=False)
+
+@socketio.on("endPath")
+def handle_end_path():
+    emit("endPath", {}, broadcast=True, include_self=False)
+
+@socketio.on("fill")
+def handle_fill(data):
+    emit("fill", data, broadcast=True, include_self=False)
+
+@socketio.on("undo")
+def handle_undo():
+    emit("undo", {}, broadcast=True, include_self=False)
+
+@socketio.on("clear")
+def handle_clear():
+    emit("clear", {}, broadcast=True, include_self=False)
+
 @app.errorhandler(404)
 def error_404(error):
     return render_template("404.html"), 404

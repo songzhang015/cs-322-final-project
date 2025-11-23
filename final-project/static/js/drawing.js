@@ -4,6 +4,8 @@ let ctx;
 let drawing = false;
 let lastX = 0;
 let lastY = 0;
+let remoteLastX = 0;
+let remoteLastY = 0;
 
 let history = [];
 
@@ -40,7 +42,7 @@ export function undo() {
     ctx.putImageData(previous, 0, 0);
 }
 
-export function initCanvas(canvas) {
+export function initCanvas(canvas, socket) {
     ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
 
@@ -57,22 +59,36 @@ export function initCanvas(canvas) {
 
         if (currentTool === "fill") {
             fillBucket(x, y);
+
+            socket.emit("fill", { x, y, color: currentColor });
+
             return;
         }
 
         drawing = true;
         lastX = x;
         lastY = y;
+        socket.emit("startPath", {
+            x,
+            y,
+            size: currentSize,
+            color: currentColor,
+            tool: currentTool
+        });
     });
 
     canvas.addEventListener("mouseup", () => {
         drawing = false;
         solidifyEdges();
+
+        socket.emit("endPath");
     });
 
     canvas.addEventListener("mouseleave", () => {
         drawing = false;
         solidifyEdges();
+
+        socket.emit("endPath");
     });
 
     canvas.addEventListener("mousemove", (e) => {
@@ -80,6 +96,11 @@ export function initCanvas(canvas) {
 
         if (currentTool === "brush" || currentTool === "eraser") {
             drawStroke(e.offsetX, e.offsetY);
+
+            socket.emit("draw", {
+                x: e.offsetX,
+                y: e.offsetY
+            });
         }
     });
 }
@@ -115,6 +136,20 @@ function solidifyEdges() {
     ctx.putImageData(img, 0, 0);
 }
 
+function normalizeTargetRegion(imageData, w, h, targetColor, tolerance = 8) {
+    const d = imageData.data;
+
+    for (let i = 0; i < d.length; i += 4) {
+        if (colorsMatch(d.slice(i, i + 4), targetColor, tolerance)) {
+            d[i]     = targetColor[0];
+            d[i + 1] = targetColor[1];
+            d[i + 2] = targetColor[2];
+            d[i + 3] = 255;  // fully opaque
+        }
+    }
+}
+
+
 function colorsMatch(a, b, tolerance = 6) {
     return (
         Math.abs(a[0] - b[0]) <= tolerance &&
@@ -129,49 +164,178 @@ function fillBucket(startX, startY) {
     const w = canvas.width;
     const h = canvas.height;
 
-    // Get canvas pixel data
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const data = imageData.data;
+    let imageData = ctx.getImageData(0, 0, w, h);
+    let data = imageData.data;
 
-    // Convert currentColor into RGBA values
-    ctx.fillStyle = currentColor;
-    const fill = ctx.fillStyle;
-
-    // Extract fill color
+    // Convert currentColor to RGBA
     const temp = document.createElement("canvas").getContext("2d");
-    temp.fillStyle = fill;
+    temp.fillStyle = currentColor;
     temp.fillRect(0, 0, 1, 1);
     const fillColor = temp.getImageData(0, 0, 1, 1).data;
 
-    const startPos = (startY * w + startX) * 4;
+    const idx = (x, y) => (y * w + x) * 4;
+
+    const startPos = idx(startX, startY);
     const targetColor = data.slice(startPos, startPos + 4);
 
-    // If clicking on same color → no need to fill
-    if (colorsMatch(fillColor, targetColor)) return;
+    // Detect if fill is unnecessary
+    if (colorsMatch(fillColor, targetColor, 1)) return;
 
-    const queue = [];
-    queue.push([startX, startY]);
+    // ---------------------------------------------
+    // PHASE 1: INITIAL REGION FINDING
+    // ---------------------------------------------
+    const tolerance = 10;
+    let regionMask = new Uint8Array(w * h);
 
-    while (queue.length) {
-        const [x, y] = queue.shift();
-        let idx = (y * w + x) * 4;
+    // Flood-fill mask generation (4-direction)
+    let q = [[startX, startY]];
+    regionMask[startY * w + startX] = 1;
 
-        // Skip if not target color
-        if (!colorsMatch(data.slice(idx, idx + 4), targetColor, 6)) continue;
+    while (q.length) {
+        const [x, y] = q.pop();
+        const i = idx(x, y);
 
-        // Set pixel to fillColor
-        data[idx] = fillColor[0];
-        data[idx + 1] = fillColor[1];
-        data[idx + 2] = fillColor[2];
-        data[idx + 3] = 255;
+        const thisColor = data.slice(i, i + 4);
+        if (!colorsMatch(thisColor, targetColor, tolerance)) continue;
 
-        // Add neighbors
-        if (x > 0) queue.push([x - 1, y]);
-        if (x < w - 1) queue.push([x + 1, y]);
-        if (y > 0) queue.push([x, y - 1]);
-        if (y < h - 1) queue.push([x, y + 1]);
+        // neighbors
+        if (x > 0 && !regionMask[y * w + (x - 1)]) {
+            regionMask[y * w + (x - 1)] = 1; q.push([x - 1, y]);
+        }
+        if (x < w - 1 && !regionMask[y * w + (x + 1)]) {
+            regionMask[y * w + (x + 1)] = 1; q.push([x + 1, y]);
+        }
+        if (y > 0 && !regionMask[(y - 1) * w + x]) {
+            regionMask[(y - 1) * w + x] = 1; q.push([x, y - 1]);
+        }
+        if (y < h - 1 && !regionMask[(y + 1) * w + x]) {
+            regionMask[(y + 1) * w + x] = 1; q.push([x, y + 1]);
+        }
     }
 
-    // Apply filled image back
+    // ---------------------------------------------
+    // PHASE 2: CHECK IF EXPANSION IS NEEDED
+    // ---------------------------------------------
+    let expansionNeeded = false;
+
+    for (let y = 1; y < h - 1 && !expansionNeeded; y++) {
+        for (let x = 1; x < w - 1 && !expansionNeeded; x++) {
+            if (!regionMask[y * w + x]) continue;
+
+            // Evaluate 8 neighbors
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    const ni = idx(nx, ny);
+                    const nColor = data.slice(ni, ni + 4);
+
+                    // If neighbor is slightly off but close enough → needs expansion
+                    if (!regionMask[ny * w + nx] &&
+                        colorsMatch(nColor, targetColor, 20)) {
+                        expansionNeeded = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // ---------------------------------------------
+    // PHASE 3: MULTIPLY REGION BY EXACTLY 1px (IF NEEDED)
+    // ---------------------------------------------
+    if (expansionNeeded) {
+        let expanded = new Uint8Array(regionMask);
+
+        for (let y = 1; y < h - 1; y++) {
+            for (let x = 1; x < w - 1; x++) {
+                if (!regionMask[y * w + x]) continue;
+
+                // Expand to 8 neighbors
+                expanded[(y - 1) * w + (x - 1)] = 1;
+                expanded[(y - 1) * w + x] = 1;
+                expanded[(y - 1) * w + (x + 1)] = 1;
+
+                expanded[y * w + (x - 1)] = 1;
+                expanded[y * w + (x + 1)] = 1;
+
+                expanded[(y + 1) * w + (x - 1)] = 1;
+                expanded[(y + 1) * w + x] = 1;
+                expanded[(y + 1) * w + (x + 1)] = 1;
+            }
+        }
+
+        regionMask = expanded;
+    }
+
+    // ---------------------------------------------
+    // PHASE 4: PAINT FINAL REGION EXACTLY
+    // ---------------------------------------------
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if (!regionMask[y * w + x]) continue;
+
+            const i = idx(x, y);
+            data[i]     = fillColor[0];
+            data[i + 1] = fillColor[1];
+            data[i + 2] = fillColor[2];
+            data[i + 3] = 255;
+        }
+    }
+
     ctx.putImageData(imageData, 0, 0);
+}
+
+export function getCanvasImage() {
+    return ctx.canvas.toDataURL("image/png");
+}
+
+export function loadCanvasFromImage(imgURL) {
+    const img = new Image();
+    img.src = imgURL;
+    img.onload = () => {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.drawImage(img, 0, 0);
+    };
+}
+
+export function applyRemoteEvent(type, data) {
+    if (type === "startPath" || type === "fill" || type === "clear") {
+        saveState();
+    }
+
+    switch (type) {
+        case "startPath":
+            ctx.strokeStyle = data.tool === "eraser" ? "white" : data.color;
+            ctx.lineWidth = data.size;
+            remoteLastX = data.x;
+            remoteLastY = data.y;
+            break;
+
+        case "draw":
+            ctx.beginPath();
+            ctx.moveTo(remoteLastX, remoteLastY);
+            ctx.lineTo(data.x, data.y);
+            ctx.stroke();
+            remoteLastX = data.x;
+            remoteLastY = data.y;
+            break;
+
+        case "endPath":
+            break;
+
+        case "fill":
+            setBrushColor(data.color);
+            fillBucket(data.x, data.y);
+            break;
+
+        case "undo":
+            undo();
+            break;
+
+        case "clear":
+            clearCanvas();
+            break;
+    }
 }

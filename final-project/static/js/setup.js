@@ -1,5 +1,5 @@
 // setup.js - initializes the game and name + avatar creation
-import { connectToServer } from "./network.js";
+import { connectToServer, getSocket } from "./network.js";
 import { initCanvas, setBrushColor, setBrushSize, setTool, clearCanvas, undo } from "./drawing.js";
 
 let nameInput;
@@ -147,9 +147,12 @@ function init() {
             alert("Please enter a name.");
             return;
         }
+		initLoadingScreen();
 
-        connectToServer(playerData);
-        initLoadingScreen();
+		connectToServer(playerData, (socket) => {
+			document.body.innerHTML = "";
+			initPlayScreen(socket);
+		});
     });
 }
 
@@ -212,14 +215,9 @@ function initLoadingScreen() {
 		clearInterval(interval);
 		loadingText.textContent = "Connected!";
 	}, 3000);
-
-	setTimeout(() => {
-		document.body.innerHTML = "";
-		initPlayScreen();
-	}, 4000);
 }
 
-function initPlayScreen() {
+function initPlayScreen(socket) {
 	const playArea = document.createElement("div");
 	playArea.classList.add("play-area");
 	document.body.append(playArea);
@@ -248,7 +246,6 @@ function initPlayScreen() {
 	}
 
 	resizeCanvas();
-	initCanvas(canvas);
 
 	const chat = document.createElement("div");
 	chat.classList.add("play-chat");
@@ -258,6 +255,7 @@ function initPlayScreen() {
 	drawtools.classList.add("play-drawtools");
 	document.body.append(drawtools);
 	createTools(drawtools)
+	initCanvas(canvas, socket);
 }
 
 function createTools(drawtools) {
@@ -415,6 +413,8 @@ function createTools(drawtools) {
 
 	undoContainer.addEventListener("click", () => {
 		undo();
+		const socket = getSocket();
+		if (socket) socket.emit("undo");
 	});
 
 	// Clear Button
@@ -428,6 +428,8 @@ function createTools(drawtools) {
 
 	clearContainer.addEventListener("click", () => {
 		clearCanvas();
+		const socket = getSocket();
+		if (socket) socket.emit("clear");
 	});
 
 	rightGroup.append(undoContainer);
@@ -435,6 +437,6 @@ function createTools(drawtools) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-	// init();
-	initPlayScreen();
+	init();
+	// initPlayScreen();
 });
