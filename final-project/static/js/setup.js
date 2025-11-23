@@ -1,5 +1,7 @@
 // setup.js - initializes the game and name + avatar creation
 import { connectToServer } from "./network.js";
+import { initCanvas, setBrushColor, setBrushSize, setTool, clearCanvas, undo } from "./drawing.js";
+
 let nameInput;
 let eyeIdx = 1;
 let mouthIdx = 1;
@@ -16,144 +18,139 @@ const colors = [
 	"brown",
 ];
 
-function init() {
-	let name = "";
-
-	const gameHeader = document.createElement("img");
-	gameHeader.src = "/static/images/logo.png";
-	gameHeader.alt = "drawing game";
-	gameHeader.classList.add("game-header");
-
-	const formContainer = document.createElement("div");
-	formContainer.classList.add("form-container");
-
-	const nameForm = document.createElement("form");
-
-	nameInput = document.createElement("input");
-	nameInput.classList.add("name-input");
-	nameInput.placeholder = "Enter your name";
-
-	const startBtn = document.createElement("button");
-	startBtn.classList.add("start-btn");
-	startBtn.textContent = "Start!";
-
-	startBtn.addEventListener("click", function (e) {
-		e.preventDefault();
-		name = nameInput.value;
-		if (1) {
-			// If name is valid - not empty, not too long
-			nameForm.classList.add("move-off");
-			initAvatar(formContainer);
-		}
-	});
-
-	document.body.append(gameHeader);
-	document.body.append(formContainer);
-	formContainer.append(nameForm);
-	nameForm.append(nameInput);
-	nameForm.append(startBtn);
+function randomColor() {
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
 function generateUniqueId() {
 	return "id-" + Math.random().toString(36).slice(2, 11);
 }
 
-function initAvatar(formContainer) {
-	const avatarForm = document.createElement("form");
+function init() {
+    document.body.innerHTML = "";
 
-	const avatarHeader = document.createElement("h1");
-	avatarHeader.classList.add("avatar-header");
-	avatarHeader.textContent = "Create your avatar";
+    const gameHeader = document.createElement("img");
+    gameHeader.src = "/static/images/logo.png";
+    gameHeader.alt = "drawing game";
+    gameHeader.classList.add("game-header");
+    document.body.append(gameHeader);
 
-	const avatarContainer = document.createElement("div");
-	avatarContainer.classList.add("avatar-container");
+    const formContainer = document.createElement("div");
+    formContainer.classList.add("form-container");
+    document.body.append(formContainer);
 
-	const avatarDisplayContainer = document.createElement("div");
-	avatarDisplayContainer.classList.add("avatar-display-container");
-
-	const avatarSelectionContainer = document.createElement("div");
-	avatarSelectionContainer.classList.add("avatar-selection-container");
-
-	const avatarDisplay = document.createElement("img");
-	avatarDisplay.classList.add("avatar-display");
-	avatarDisplay.src = "static/images/avatar-skeleton.png";
-
-	const avatarEye = document.createElement("div");
-	avatarEye.classList.add("avatar-eye");
-	const eyeMain = document.createElement("img");
-	eyeMain.classList.add("eye-main");
-	eyeMain.src = "static/images/eyes/eye-avatar-1.png";
-	const eyePreview = document.createElement("img");
-	eyePreview.classList.add("eye-preview");
-	eyePreview.src = "static/images/eyes/eye-preview-1.png";
-	const eyeArrow = document.createElement("button");
-	eyeArrow.classList.add("eye-arrow");
-	eyeArrow.textContent = ">";
-	avatarEye.append(eyePreview, eyeArrow);
-
-	const avatarMouth = document.createElement("div");
-	avatarMouth.classList.add("avatar-mouth");
-	const mouthMain = document.createElement("img");
-	mouthMain.classList.add("mouth-main");
-	mouthMain.src = "static/images/mouths/mouth-avatar-1.png";
-	const mouthPreview = document.createElement("img");
-	mouthPreview.classList.add("mouth-preview");
-	mouthPreview.src = "static/images/mouths/mouth-preview-1.png";
-	const mouthArrow = document.createElement("button");
-	mouthArrow.classList.add("mouth-arrow");
-	mouthArrow.textContent = ">";
-	avatarMouth.append(mouthPreview, mouthArrow);
-
-	const avatarColor = document.createElement("div");
-	avatarColor.classList.add("avatar-color");
-	const colorMain = document.createElement("img");
-	colorMain.classList.add("color-main");
-	colorMain.src = "static/images/colors/color-avatar-white.png";
-	const colorPreview = document.createElement("img");
-	colorPreview.classList.add("color-preview");
-	colorPreview.src = "static/images/colors/color-preview-white.png";
-	const colorArrow = document.createElement("button");
-	colorArrow.classList.add("color-arrow");
-	colorArrow.textContent = ">";
-	avatarColor.append(colorPreview, colorArrow);
-
-	const playBtn = document.createElement("button");
-	playBtn.classList.add("play-btn");
-	playBtn.textContent = "Play!";
-
-	playBtn.addEventListener("click", function (e) {
+    const form = document.createElement("form");
+    formContainer.append(form);
+	form.addEventListener("submit", (e) => {
 		e.preventDefault();
-		// Gather player data
-		const playerData = {
-			id: generateUniqueId(), // simple random string
-			name: nameInput.value, // player's name from input
-			avatar: {
-				eye: eyeIdx, // current selected eye
-				mouth: mouthIdx, // current selected mouth
-				color: colors[colorIdx], // current selected color
-			},
-		};
-
-		// Connect to server
-		connectToServer(playerData);
-
-		// Initialize loading screen
-		initLoadingScreen();
 	});
 
-	formContainer.append(avatarForm);
-	avatarForm.append(avatarHeader);
-	avatarForm.append(avatarContainer);
-	avatarForm.append(playBtn);
-	avatarContainer.append(avatarDisplayContainer);
-	avatarContainer.append(avatarSelectionContainer);
+    // Name Input
+    nameInput = document.createElement("input");
+    nameInput.classList.add("name-input");
+    nameInput.placeholder = "Enter your name";
+    form.append(nameInput);
 
-	avatarDisplayContainer.append(avatarDisplay, colorMain, eyeMain, mouthMain);
-	avatarSelectionContainer.append(avatarEye, avatarMouth, avatarColor);
-	avatarForm.classList.add("move-in");
-	initEyeController(eyeArrow, eyeMain, eyePreview);
-	initMouthController(mouthArrow, mouthMain, mouthPreview);
-	initColorController(colorArrow, colorMain, colorPreview);
+    // Avatar Containers
+    const avatarContainer = document.createElement("div");
+    avatarContainer.classList.add("avatar-container");
+    form.append(avatarContainer);
+
+    const avatarDisplayContainer = document.createElement("div");
+    avatarDisplayContainer.classList.add("avatar-display-container");
+
+    const avatarSelectionContainer = document.createElement("div");
+    avatarSelectionContainer.classList.add("avatar-selection-container");
+
+    avatarContainer.append(avatarDisplayContainer, avatarSelectionContainer);
+
+    // Avatar images
+    const avatarDisplay = document.createElement("img");
+    avatarDisplay.classList.add("avatar-display");
+    avatarDisplay.src = "static/images/avatar-skeleton.png";
+
+    const eyeMain = document.createElement("img");
+    eyeMain.classList.add("eye-main");
+    eyeMain.src = "static/images/eyes/eye-avatar-1.png";
+
+    const mouthMain = document.createElement("img");
+    mouthMain.classList.add("mouth-main");
+    mouthMain.src = "static/images/mouths/mouth-avatar-1.png";
+
+    const colorMain = document.createElement("img");
+    colorMain.classList.add("color-main");
+    colorMain.src = `static/images/colors/color-avatar-${colors[0]}.png`;
+
+    avatarDisplayContainer.append(avatarDisplay, colorMain, eyeMain, mouthMain);
+
+    // Avatar selectors
+    const avatarEye = document.createElement("div");
+	avatarEye.classList.add("avatar-eye");
+    const eyePreview = document.createElement("img");
+    eyePreview.src = "static/images/eyes/eye-preview-1.png";
+	eyePreview.classList.add("eye-preview");
+    const eyeArrow = document.createElement("button");
+    eyeArrow.type = "button";
+	eyeArrow.classList.add("eye-arrow");
+    eyeArrow.textContent = ">";
+    avatarEye.append(eyePreview, eyeArrow);
+
+    const avatarMouth = document.createElement("div");
+	avatarMouth.classList.add("avatar-mouth");
+    const mouthPreview = document.createElement("img");
+    mouthPreview.src = "static/images/mouths/mouth-preview-1.png";
+	mouthPreview.classList.add("mouth-preview");
+    const mouthArrow = document.createElement("button");
+    mouthArrow.type = "button";
+	mouthArrow.classList.add("mouth-arrow");
+    mouthArrow.textContent = ">";
+    avatarMouth.append(mouthPreview, mouthArrow);
+
+    const avatarColor = document.createElement("div");
+	avatarColor.classList.add("avatar-color");
+    const colorPreview = document.createElement("img");
+    colorPreview.src = "static/images/colors/color-preview-white.png";
+	colorPreview.classList.add("color-preview");
+    const colorArrow = document.createElement("button");
+    colorArrow.type = "button";
+	colorArrow.classList.add("color-arrow");
+    colorArrow.textContent = ">";
+    avatarColor.append(colorPreview, colorArrow);
+
+    avatarSelectionContainer.append(avatarEye, avatarMouth, avatarColor);
+
+    // Controllers
+    initEyeController(eyeArrow, eyeMain, eyePreview);
+    initMouthController(mouthArrow, mouthMain, mouthPreview);
+    initColorController(colorArrow, colorMain, colorPreview);
+
+    // Play Button
+    const playBtn = document.createElement("button");
+    playBtn.classList.add("play-btn");
+    playBtn.textContent = "Play!";
+    playBtn.type = "button";
+    form.append(playBtn);
+
+    playBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        const playerData = {
+            id: generateUniqueId(),
+            name: nameInput.value.trim(),
+            avatar: { eye: eyeIdx, mouth: mouthIdx, color: colors[colorIdx] },
+        };
+
+        if (!playerData.name) {
+            alert("Please enter a name.");
+            return;
+        }
+
+        connectToServer(playerData);
+        initLoadingScreen();
+    });
 }
 
 function initEyeController(arrow, avatarDiv, previewDiv) {
@@ -214,12 +211,12 @@ function initLoadingScreen() {
 	setTimeout(() => {
 		clearInterval(interval);
 		loadingText.textContent = "Connected!";
-	}, 5000);
+	}, 3000);
 
 	setTimeout(() => {
 		document.body.innerHTML = "";
 		initPlayScreen();
-	}, 6000);
+	}, 4000);
 }
 
 function initPlayScreen() {
@@ -237,13 +234,207 @@ function initPlayScreen() {
 
 	const drawpad = document.createElement("div");
 	drawpad.classList.add("play-drawpad");
+
+	const canvas = document.createElement("canvas");
+	canvas.classList.add("draw-canvas");
+
+	drawpad.append(canvas);
 	playArea.append(drawpad);
+
+	function resizeCanvas() {
+		const rect = drawpad.getBoundingClientRect();
+		canvas.width = rect.width;
+		canvas.height = rect.height;
+	}
+
+	resizeCanvas();
+	initCanvas(canvas);
 
 	const chat = document.createElement("div");
 	chat.classList.add("play-chat");
 	playArea.append(chat);
+
+	const drawtools = document.createElement("div");
+	drawtools.classList.add("play-drawtools");
+	document.body.append(drawtools);
+	createTools(drawtools)
+}
+
+function createTools(drawtools) {
+	// Contains brush, eraser, fill bucket
+	const leftGroup = document.createElement("div");
+	leftGroup.classList.add("tools-left-group");
+	drawtools.append(leftGroup);
+
+	// Select Brush
+	const brushContainer = document.createElement("div");
+	brushContainer.classList.add("brush-container");
+	const brushIcon = document.createElement("img");
+	brushIcon.classList.add("brush-icon");
+	brushIcon.src = "static/images/icons/brush.svg";
+	brushIcon.alt = "Brush";
+	brushContainer.append(brushIcon);
+	leftGroup.append(brushContainer);
+
+	setTool("brush");
+	brushIcon.classList.add("selected-tool");
+
+	// Select Eraser
+	const eraserContainer = document.createElement("div");
+	eraserContainer.classList.add("eraser-container");
+	const eraserIcon = document.createElement("img");
+	eraserIcon.classList.add("eraser-icon");
+	eraserIcon.src = "static/images/icons/eraser.svg";
+	eraserIcon.alt = "Eraser";
+	eraserContainer.append(eraserIcon);
+	leftGroup.append(eraserContainer);
+
+	// Select Fill Bucket
+	const fillContainer = document.createElement("div");
+	fillContainer.classList.add("fill-container");
+	const fillIcon = document.createElement("img");
+	fillIcon.classList.add("fill-icon");
+	fillIcon.src = "static/images/icons/fill.svg";
+	fillIcon.alt = "Fill";
+	fillContainer.append(fillIcon);
+	leftGroup.append(fillContainer);
+
+	brushIcon.addEventListener("click", () => {
+		setTool("brush");
+
+		brushIcon.classList.add("selected-tool");
+		eraserIcon.classList.remove("selected-tool");
+		fillIcon.classList.remove("selected-tool");
+	});
+
+	eraserIcon.addEventListener("click", () => {
+		setTool("eraser");
+
+		eraserIcon.classList.add("selected-tool");
+		brushIcon.classList.remove("selected-tool");
+		fillIcon.classList.remove("selected-tool");
+	});
+
+	fillIcon.addEventListener("click", () => {
+		setTool("fill");
+
+		fillIcon.classList.add("selected-tool");
+		brushIcon.classList.remove("selected-tool");
+		eraserIcon.classList.remove("selected-tool");
+	});
+
+	// Colors Container
+	const colorsContainer = document.createElement("div");
+	colorsContainer.classList.add("colors-container");
+	drawtools.append(colorsContainer);
+
+	// Color Grid
+	const colorGrid = document.createElement("div");
+	colorGrid.classList.add("color-grid");
+	colorsContainer.append(colorGrid);
+
+	// Current Color
+	const currentColor = document.createElement("div");
+	currentColor.classList.add("current-color");
+	colorsContainer.append(currentColor);
+	let defaultPaletteColor = null;
+
+	for (let i = 0; i < 24; i++) {
+		const cell = document.createElement("div");
+
+		const color = randomColor();
+    	cell.style.background = color;
+
+		if (i === 0) {
+			defaultPaletteColor = color;
+		}
+
+		cell.addEventListener("click", () => {
+			setBrushColor(color);
+			currentColor.style.background = color;
+		});
+
+		colorGrid.append(cell);
+	}
+
+	setBrushColor(defaultPaletteColor);
+	currentColor.style.background = defaultPaletteColor;
+
+
+	// Brush Size Selector
+    const brushSizeSelector = document.createElement("div");
+    brushSizeSelector.classList.add("brush-size-selector");
+    drawtools.append(brushSizeSelector);
+
+	for (let i = 1; i <= 8; i++) {
+		const sizeOption = document.createElement("div");
+		sizeOption.classList.add("brush-size-option");
+		sizeOption.dataset.size = i;
+		const img = document.createElement("img");
+		img.src = "static/images/dot.png";
+		img.classList.add("brush-size-dot");
+
+		img.style.width = `${i * 32}px`;
+		img.style.height = `${i * 32}px`;
+
+		sizeOption.append(img);
+
+		const sizeMap = [2, 4, 8, 12, 16, 20, 25, 30];
+
+		sizeOption.addEventListener("click", () => {
+			setBrushSize(sizeMap[i - 1]);
+
+			// Remove selected from all
+			document.querySelectorAll(".brush-size-option")
+				.forEach(option => option.classList.remove("selected"));
+
+			// Highlight clicked
+			sizeOption.classList.add("selected");
+		});
+
+		brushSizeSelector.append(sizeOption);
+		if (i === 1) {
+			sizeOption.classList.add("selected");
+			setBrushSize(sizeMap[0]);
+		}
+	}
+
+	// Contains clear canvas and undo buttons
+	const rightGroup = document.createElement("div");
+	rightGroup.classList.add("tools-right-group");
+	drawtools.append(rightGroup);
+
+	// Undo Button
+	const undoContainer = document.createElement("div");
+	undoContainer.classList.add("undo-container");
+	const undoIcon = document.createElement("img");
+	undoIcon.classList.add("undo-icon");
+	undoIcon.src = "static/images/icons/undo.svg";
+	undoIcon.alt = "Undo";
+	undoContainer.append(undoIcon);
+
+	undoContainer.addEventListener("click", () => {
+		undo();
+	});
+
+	// Clear Button
+	const clearContainer = document.createElement("div");
+	clearContainer.classList.add("clear-container");
+	const clearIcon = document.createElement("img");
+	clearIcon.classList.add("clear-icon");
+	clearIcon.src = "static/images/icons/clear.svg";
+	clearIcon.alt = "Clear";
+	clearContainer.append(clearIcon);
+
+	clearContainer.addEventListener("click", () => {
+		clearCanvas();
+	});
+
+	rightGroup.append(undoContainer);
+	rightGroup.append(clearContainer);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-	init();
+	// init();
+	initPlayScreen();
 });

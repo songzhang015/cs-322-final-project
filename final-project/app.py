@@ -13,7 +13,6 @@ current_round = {}
 def index():
     return render_template("index.html"), 200
 
-
 @socketio.on("join")
 def handle_join(data):
     """
