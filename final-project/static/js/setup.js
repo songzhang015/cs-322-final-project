@@ -1,6 +1,7 @@
 // setup.js - initializes the game and name + avatar creation
 import { connectToServer, getSocket } from "./network.js";
 import { initCanvas, setBrushColor, setBrushSize, setTool, clearCanvas, undo } from "./drawing.js";
+import { initChatDOM } from "./chat.js";
 
 let nameInput;
 let eyeIdx = 1;
@@ -233,6 +234,21 @@ function initPlayScreen(socket) {
 	const drawpad = document.createElement("div");
 	drawpad.classList.add("play-drawpad");
 
+	const promptBanner = document.createElement("div");
+	promptBanner.classList.add("prompt-banner");
+
+	// Two H2 elements
+	const line1 = document.createElement("h2");
+	line1.classList.add("prompt-line1");
+	line1.textContent = "";
+
+	const line2 = document.createElement("h2");
+	line2.classList.add("prompt-line2");
+	line2.textContent = "";
+
+	promptBanner.append(line1, line2);
+	header.append(promptBanner);
+
 	const canvas = document.createElement("canvas");
 	canvas.classList.add("draw-canvas");
 
@@ -252,10 +268,12 @@ function initPlayScreen(socket) {
 	playArea.append(chat);
 
 	const drawtools = document.createElement("div");
-	drawtools.classList.add("play-drawtools");
+	drawtools.classList.add("play-drawtools", "hidden");
 	document.body.append(drawtools);
-	createTools(drawtools)
+	createTools(drawtools);
+
 	initCanvas(canvas, socket);
+	initChatDOM(chat);
 }
 
 function createTools(drawtools) {

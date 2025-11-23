@@ -1,1 +1,81 @@
 // chat.js - handles chat and guessing prompts
+import { getSocket } from "./network.js";
+
+export function initChatDOM(chatContainer) {
+    const chatHistory = document.createElement("div");
+    chatHistory.classList.add("chat-history");
+
+    const chatInput = document.createElement("input");
+    chatInput.classList.add("chat-input");
+    chatInput.placeholder = "Type your guess or message...";
+
+    chatContainer.append(chatHistory, chatInput);
+
+    const socket = getSocket();
+    chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            const msg = chatInput.value.trim();
+            if (!msg) return;
+
+            socket.emit("chatMessage", { message: msg });
+            chatInput.value = "";
+        }
+    });
+
+    socket.on("chatMessage", (data) => {
+        const msg = document.createElement("div");
+        if (data.sender_zone === 1) {
+            msg.classList.add("zone1");
+        } else {
+            msg.classList.add("zone2");
+        }
+
+        msg.classList.add("chat-message");
+
+        msg.textContent = `${data.name}: ${data.message}`;
+        chatHistory.append(msg);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    });
+
+    socket.on("correctGuess", (data) => {
+        const sys = document.createElement("div");
+        sys.classList.add("chat-system");
+        sys.textContent = `${data.name} guessed the word!`;
+        chatHistory.append(sys);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    });
+
+    socket.on("roundPrompt", (data) => {
+        if (data.role === "drawer") {
+            const sys = document.createElement("div");
+            sys.classList.add("chat-system");
+            sys.textContent = `You are drawing: ${data.prompt}`;
+            chatHistory.append(sys);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            const line1 = document.querySelector(".prompt-line1");
+            const line2 = document.querySelector(".prompt-line2");
+
+            if (line1 && line2) {
+                line1.textContent = "Draw the prompt:";
+                line2.textContent = data.prompt;
+            }
+        }
+    });
+
+    socket.on("waitingForPlayers", (data) => {
+        const sys = document.createElement("div");
+        sys.classList.add("chat-system");
+        sys.textContent = data.message;
+        chatHistory.append(sys);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    });
+
+    socket.on("roundStarted", (data) => {
+        const sys = document.createElement("div");
+        sys.classList.add("chat-system");
+        sys.textContent = "New round starting!";
+        chatHistory.append(sys);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    });
+}

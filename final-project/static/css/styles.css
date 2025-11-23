@@ -208,6 +208,9 @@ body {
 	background-color: rgb(255, 177, 177);
 	border: 2px solid black;
 	grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .play-scoreboard {
@@ -231,13 +234,6 @@ body {
     display: block;
 }
 
-.play-chat {
-	grid-row: 2;
-	grid-column: 3;
-	background-color: #fafea8;
-	border: 2px solid black;
-}
-
 .play-drawtools {
 	width: 80rem;
 	height: auto;
@@ -250,7 +246,33 @@ body {
 	padding: 1rem;
 }
 
+.play-drawtools.hidden {
+    opacity: 0;              /* fully invisible */
+    pointer-events: none;    /* cannot click anything */
+}
+
+.play-drawtools.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Header section */
+.prompt-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.prompt-banner h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
 /* Draw Tools Area */
+
 .tools-left-group {
 	display: flex;
 	justify-content: center;
@@ -380,4 +402,48 @@ body {
 
 .brush-size-option:hover {
     transform: translateY(-4px);
+}
+
+/* Chat and Guessing */
+.play-chat {
+	grid-row: 2;
+	grid-column: 3;
+	background-color: #fafea8;
+	border: 2px solid black;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.chat-history {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background-color: rgb(200, 200, 200);
+	padding: 0.5rem;
+}
+
+.chat-input {
+	padding: 0.5rem;
+	background-color: rgb(255, 255, 255);
+	border: none;
+	border-top: 2px solid black;
+}
+
+.chat-system {
+	font-weight: bold;
+	margin-bottom: 0.5rem;
+}
+
+.chat-message {
+    color: black;
+	margin-bottom: 0.5rem;
+}
+
+.chat-message.zone1 {
+    color: black !important;
+}
+
+.chat-message.zone2 {
+    color: #17a517 !important;
 }

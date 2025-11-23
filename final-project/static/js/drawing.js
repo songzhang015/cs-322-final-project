@@ -2,6 +2,7 @@
 
 let ctx;
 let drawing = false;
+let drawingEnabled = true;
 let lastX = 0;
 let lastY = 0;
 let remoteLastX = 0;
@@ -13,6 +14,10 @@ let history = [];
 let currentColor = "black";
 let currentSize = 5;
 let currentTool = "brush";  // brush | eraser
+
+export function setDrawingEnabled(state) {
+    drawingEnabled = state;
+}
 
 export function setBrushColor(color) {
     currentColor = color;
@@ -52,6 +57,7 @@ export function initCanvas(canvas, socket) {
 
     // --- MOUSE EVENTS ---
     canvas.addEventListener("mousedown", (e) => {
+        if (!drawingEnabled) return;
         saveState();
 
         const x = e.offsetX;
@@ -78,6 +84,7 @@ export function initCanvas(canvas, socket) {
     });
 
     canvas.addEventListener("mouseup", () => {
+        if (!drawingEnabled) return;
         drawing = false;
         solidifyEdges();
 
@@ -92,6 +99,7 @@ export function initCanvas(canvas, socket) {
     });
 
     canvas.addEventListener("mousemove", (e) => {
+        if (!drawingEnabled) return;
         if (!drawing) return;
 
         if (currentTool === "brush" || currentTool === "eraser") {
@@ -148,7 +156,6 @@ function normalizeTargetRegion(imageData, w, h, targetColor, tolerance = 8) {
         }
     }
 }
-
 
 function colorsMatch(a, b, tolerance = 6) {
     return (
