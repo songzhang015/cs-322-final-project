@@ -201,6 +201,15 @@ def handle_disconnect():
 
         print(f"{name} left. Remaining players: {len(players)}")
 
+        # BROADCAST SYSTEM MESSAGE
+        emit("chatMessage", {
+            "name": "",
+            "message": f"{name} left the game.",
+            "sender_zone": 2,
+            "system": True
+        }, broadcast=True)
+
+        # Update player list
         emit("playerList", [
             {
                 "name": p["name"],
@@ -210,8 +219,7 @@ def handle_disconnect():
             for p in players.values()
         ], broadcast=True)
 
-        # >>> NEW BLOCK BELOW <<<
-        # If only ONE player remains → reset to waiting lobby state
+        # >>> IMPORTANT: LOBBY RESET LOGIC <<<
         if len(players_order) == 1:
             reset_lobby()
 
@@ -220,11 +228,6 @@ def handle_disconnect():
                 "message": "Waiting for one more person..."
             }, room=remaining_sid)
 
-            return
-
-        # If ZERO players remain → reset everything
-        if len(players_order) == 0:
-            reset_lobby()
             return
 
 

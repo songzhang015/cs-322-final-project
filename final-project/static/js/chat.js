@@ -24,6 +24,8 @@ export function initChatDOM(chatContainer) {
 
     socket.on("chatMessage", (data) => {
         const msg = document.createElement("div");
+
+        // Style by zone
         if (data.sender_zone === 1) {
             msg.classList.add("zone1");
         } else {
@@ -32,7 +34,14 @@ export function initChatDOM(chatContainer) {
 
         msg.classList.add("chat-message");
 
-        msg.textContent = `${data.name}: ${data.message}`;
+        // NEW: system messages = red text, no name prefix
+        if (data.system) {
+            msg.classList.add("chat-system-red");
+            msg.textContent = data.message;  // no name
+        } else {
+            msg.textContent = `${data.name}: ${data.message}`;
+        }
+
         chatHistory.append(msg);
         chatHistory.scrollTop = chatHistory.scrollHeight;
     });

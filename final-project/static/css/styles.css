@@ -473,9 +473,13 @@ body {
 }
 
 .chat-message.zone1 {
-    color: black !important;
+    color: black;
 }
 
 .chat-message.zone2 {
-    color: #17a517 !important;
+    color: #17a517;
+}
+
+.chat-system-red {
+    color: red !important;
 }
