@@ -234,6 +234,29 @@ def handle_disconnect():
             for p in players.values()
         ], broadcast=True)
 
+        # >>> NEW: If the drawer left mid-round, auto-advance <<<
+        if current_round["active"] and sid == current_round["drawer"]:
+            print("Drawer left mid-round. Advancing to next player.")
+
+            # Reveal the word
+            emit("chatMessage", {
+                "type": "reveal",
+                "word": current_round["prompt"],
+                "sender_zone": 2
+            }, broadcast=True)
+
+            # Fix drawer index if needed
+            if players_order:
+                current_drawer_index = current_drawer_index % len(players_order)
+            else:
+                current_drawer_index = 0
+
+            current_round["active"] = False
+
+            # Start next round
+            start_new_round()
+            return
+
         # >>> IMPORTANT: LOBBY RESET LOGIC <<<
         if len(players_order) == 1:
             if current_round["active"] and current_round["prompt"]:
@@ -250,6 +273,7 @@ def handle_disconnect():
             }, room=remaining_sid)
 
             return
+
 
 def log_event(event_type, data=None):
     canvas_history.append((event_type, data or {}))
