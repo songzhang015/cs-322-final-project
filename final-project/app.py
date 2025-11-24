@@ -54,10 +54,19 @@ def start_new_round():
             "role": "drawer" if sid == drawer_sid else "guesser"
         }, room=sid)
 
+    # Drawer
     emit("roundPrompt", {
         "role": "drawer",
         "prompt": prompt
     }, room=drawer_sid)
+
+    # Guesser
+    for sid in players:
+        if sid != drawer_sid:
+            emit("roundPrompt", {
+                "role": "guesser",
+                "length": len(prompt)
+            }, room=sid)
 
 @app.route("/")
 def index():
@@ -174,6 +183,16 @@ def handle_clear():
     if request.sid == current_round["drawer"]:
         emit("clear", {}, broadcast=True, include_self=False)
 
+@socketio.on("forceRoundEnd")
+def handle_force_round_end():
+    global current_drawer_index
+
+    if not current_round["active"]:
+        return
+
+    current_round["active"] = False
+    current_drawer_index = (current_drawer_index + 1) % len(players_order)
+    start_new_round()
 
 @socketio.on("chatMessage")
 def handle_chat_message(data):

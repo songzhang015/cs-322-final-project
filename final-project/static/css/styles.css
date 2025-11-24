@@ -211,6 +211,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+	position: relative;
 }
 
 .play-scoreboard {
@@ -271,8 +272,39 @@ body {
     font-weight: bold;
 }
 
-/* Draw Tools Area */
+/* Position the clock on the left side */
+.timer-container {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
 
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    user-select: none;
+}
+
+/* The SVG image */
+.timer-clock {
+    width: 100%;
+    height: 100%;
+}
+
+/* The number overlay */
+.timer-text {
+    position: absolute;
+    font-size: 1.25rem;
+    font-weight: bold;
+    pointer-events: none;
+    user-select: none;
+}
+
+
+/* Draw Tools Area */
 .tools-left-group {
 	display: flex;
 	justify-content: center;

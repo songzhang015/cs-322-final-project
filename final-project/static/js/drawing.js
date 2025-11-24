@@ -83,6 +83,30 @@ export function initCanvas(canvas, socket) {
         });
     });
 
+    canvas.addEventListener("click", (e) => {
+        if (!drawingEnabled) return;
+
+        const x = e.offsetX;
+        const y = e.offsetY;
+
+        // Draw dot locally
+        ctx.beginPath();
+        ctx.arc(x, y, currentSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = currentTool === "eraser" ? "white" : currentColor;
+        ctx.fill();
+
+        // Send to other players
+        socket.emit("startPath", {
+            x,
+            y,
+            size: currentSize,
+            color: currentColor,
+            tool: currentTool
+        });
+        socket.emit("draw", { x, y });
+        socket.emit("endPath", {});
+    });
+
     canvas.addEventListener("mouseup", () => {
         if (!drawingEnabled) return;
         drawing = false;

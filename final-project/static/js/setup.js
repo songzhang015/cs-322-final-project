@@ -223,16 +223,33 @@ function initPlayScreen(socket) {
 	playArea.classList.add("play-area");
 	document.body.append(playArea);
 
-	const header = document.createElement("div");
-	header.classList.add("play-header");
-	playArea.append(header);
-
 	const scoreboard = document.createElement("div");
 	scoreboard.classList.add("play-scoreboard");
 	playArea.append(scoreboard);
 
 	const drawpad = document.createElement("div");
 	drawpad.classList.add("play-drawpad");
+
+	const header = document.createElement("div");
+	header.classList.add("play-header");
+	playArea.append(header);
+
+	// === TIMER ELEMENT ===
+	const timerContainer = document.createElement("div");
+	timerContainer.classList.add("timer-container");
+	
+	// Clock image
+	const clockImg = document.createElement("img");
+	clockImg.src = "static/images/icons/alarm-clock.svg";
+	clockImg.classList.add("timer-clock");
+
+	// Timer text overlay
+	const timerText = document.createElement("div");
+	timerText.classList.add("timer-text");
+	timerText.textContent = ""; // starts empty
+
+	timerContainer.append(clockImg, timerText);
+	header.append(timerContainer);
 
 	const promptBanner = document.createElement("div");
 	promptBanner.classList.add("prompt-banner");

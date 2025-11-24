@@ -1,7 +1,10 @@
 // network.js - handles the data syncing between players
 import { applyRemoteEvent, setDrawingEnabled } from "./drawing.js";
 
+const ROUND_TIME = 20;
 let socket = null;
+let roundTimer = null;
+let roundTimeLeft = ROUND_TIME;
 
 export function connectToServer(playerData, onConnected) {
     socket = io();
@@ -25,12 +28,30 @@ export function connectToServer(playerData, onConnected) {
 	socket.on("roundStarted", (data) => {
 		console.log("Round started!", data);
 
+		// Clear timer
+		if (roundTimer) clearInterval(roundTimer);
+		roundTimeLeft = ROUND_TIME;
+
+		const timerTextEl = document.querySelector(".timer-text");
+		if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
+
+		// === TIMER START ===
+		roundTimer = setInterval(() => {
+			roundTimeLeft--;
+			if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
+
+			if (roundTimeLeft <= 0) {
+				clearInterval(roundTimer);
+				socket.emit("forceRoundEnd");
+			}
+		}, 1000);
+
         const line1 = document.querySelector(".prompt-line1");
         const line2 = document.querySelector(".prompt-line2");
 
         if (line1) line1.textContent = "";
         if (line2) line2.textContent = "";
-		
+
 		const toolbar = document.querySelector(".play-drawtools");
 
 		if (data.role === "drawer") {
@@ -50,15 +71,6 @@ export function connectToServer(playerData, onConnected) {
 	socket.on("fill", data => applyRemoteEvent("fill", data));
 	socket.on("undo", () => applyRemoteEvent("undo"));
 	socket.on("clear", () => applyRemoteEvent("clear"));
-
-	socket.on("roundPrompt", data => {
-		console.log("You are drawing:", data.prompt);
-	});
-
-	socket.on("roundStarted", data => {
-		console.log("A new round started! You are a guesser.");
-		// TODO: display "Guess the drawing!" in UI
-	});
 }
 
 // Export socket so other modules can emit events

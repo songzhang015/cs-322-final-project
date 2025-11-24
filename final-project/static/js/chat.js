@@ -46,6 +46,10 @@ export function initChatDOM(chatContainer) {
     });
 
     socket.on("roundPrompt", (data) => {
+        const line1 = document.querySelector(".prompt-line1");
+        const line2 = document.querySelector(".prompt-line2");
+        if (!line1 || !line2) return;
+
         if (data.role === "drawer") {
             const sys = document.createElement("div");
             sys.classList.add("chat-system");
@@ -53,13 +57,15 @@ export function initChatDOM(chatContainer) {
             chatHistory.append(sys);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            const line1 = document.querySelector(".prompt-line1");
-            const line2 = document.querySelector(".prompt-line2");
+            line1.textContent = "Draw the prompt:";
+            line2.textContent = data.prompt;
 
-            if (line1 && line2) {
-                line1.textContent = "Draw the prompt:";
-                line2.textContent = data.prompt;
-            }
+        } else {
+            // === FULLY SECURE GUESSER MODE ===
+            // Guessers receive ONLY length
+            const underscores = Array(data.length).fill("_").join(" ");
+            line1.textContent = "Guess the word:";
+            line2.textContent = underscores;
         }
     });
 
