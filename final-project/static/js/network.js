@@ -30,7 +30,7 @@ export function connectToServer(playerData, onConnected) {
 
 		// Clear timer
 		if (roundTimer) clearInterval(roundTimer);
-		roundTimeLeft = ROUND_TIME;
+		roundTimeLeft = data.remaining ?? ROUND_TIME;
 
 		const timerTextEl = document.querySelector(".timer-text");
 		if (timerTextEl) timerTextEl.textContent = roundTimeLeft;

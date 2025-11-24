@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import random
+import time
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
@@ -17,7 +18,8 @@ current_round = {
     "drawer": None,
     "prompt": None,
     "active": False,
-    "correct_guessers": set()
+    "correct_guessers": set(),
+    "time_started": None
 }
 
 words = [
@@ -43,6 +45,7 @@ def start_new_round():
     current_round["prompt"] = prompt
     current_round["active"] = True
     current_round["correct_guessers"] = set()
+    current_round["time_started"] = time.time()
 
     print(f"New round started!")
     print(f"Drawer: {players[drawer_sid]['name']}  Prompt: {prompt}")
@@ -79,12 +82,11 @@ def handle_join(data):
     sid = request.sid
     name = data.get("name")
     avatar = data.get("avatar")
-    client_id = data.get("id")   # optional client local ID (not used for logic)
+    client_id = data.get("id")
 
     if not name or not avatar:
         return
 
-    # Store player using SID as the true unique identifier
     players[sid] = {
         "client_id": client_id,
         "name": name,
@@ -92,25 +94,63 @@ def handle_join(data):
         "score": 0
     }
 
-    # Preserve join order
     players_order.append(sid)
 
     print(f"{name} joined with SID {sid}")
     print("Current players order:", players_order)
 
-    # First player → do NOT start. Tell them to wait.
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # NEW BLOCK: sync late joiner with active round
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    if current_round["active"]:
+        ROUND_TIME = 20
+
+        elapsed = int(time.time() - current_round["time_started"])
+        remaining = max(0, ROUND_TIME - elapsed)
+
+        drawer_sid = current_round["drawer"]
+        prompt = current_round["prompt"]
+
+        emit("roundStarted", {
+            "role": "drawer" if sid == drawer_sid else "guesser",
+            "remaining": remaining
+        }, room=sid)
+
+        if sid == drawer_sid:
+            emit("roundPrompt", {
+                "role": "drawer",
+                "prompt": prompt
+            }, room=sid)
+        else:
+            emit("roundPrompt", {
+                "role": "guesser",
+                "length": len(prompt)
+            }, room=sid)
+
+        emit("playerList", [
+            {
+                "name": p["name"],
+                "avatar": p["avatar"],
+                "score": p["score"]
+            }
+            for p in players.values()
+        ], broadcast=True)
+
+        return
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    # First player
     if len(players_order) == 1:
         emit("waitingForPlayers", {
             "message": "Waiting for one more person..."
         }, room=sid)
         return
 
-    # Second+ player → start the round *only when exactly 2*
+    # Second player → start the first round
     if len(players_order) == 2:
         current_drawer_index = 0
         start_new_round()
 
-    # Send updated scoreboard/player list
     emit("playerList", [
         {
             "name": p["name"],
@@ -119,6 +159,7 @@ def handle_join(data):
         }
         for p in players.values()
     ], broadcast=True)
+
 
 @socketio.on("disconnect")
 def handle_disconnect():
