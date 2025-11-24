@@ -483,3 +483,24 @@ body {
 .chat-system-red {
     color: red !important;
 }
+
+.chat-correct,
+.chat-leave,
+.chat-reveal {
+    color: inherit !important;      /* wipe out zone colors */
+}
+
+.chat-correct {
+    color: #1ebd1e !important;      /* green bold */
+    font-weight: bold;
+}
+
+.chat-leave {
+    color: red !important;          /* red normal */
+    font-weight: normal;
+}
+
+.chat-reveal {
+    color: orange !important;       /* orange bold */
+    font-weight: bold;
+}

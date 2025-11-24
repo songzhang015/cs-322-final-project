@@ -35,10 +35,20 @@ export function initChatDOM(chatContainer) {
         msg.classList.add("chat-message");
 
         // NEW: system messages = red text, no name prefix
-        if (data.system) {
-            msg.classList.add("chat-system-red");
-            msg.textContent = data.message;  // no name
-        } else {
+        if (data.type === "correct") {
+            msg.classList.add("chat-correct");
+            msg.textContent = `${data.name} guessed the word!`;
+        }
+        else if (data.type === "leave") {
+            msg.classList.add("chat-leave");
+            msg.textContent = `${data.message}`;
+        }
+        else if (data.type === "reveal") {
+            msg.classList.add("chat-reveal");
+            msg.textContent = `The word was ${data.word}!`;
+        }
+        else {
+            // Normal chat
             msg.textContent = `${data.name}: ${data.message}`;
         }
 

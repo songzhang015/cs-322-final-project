@@ -203,10 +203,9 @@ def handle_disconnect():
 
         # BROADCAST SYSTEM MESSAGE
         emit("chatMessage", {
-            "name": "",
+            "type": "leave",
             "message": f"{name} left the game.",
-            "sender_zone": 2,
-            "system": True
+            "sender_zone": 2
         }, broadcast=True)
 
         # Update player list
@@ -221,6 +220,12 @@ def handle_disconnect():
 
         # >>> IMPORTANT: LOBBY RESET LOGIC <<<
         if len(players_order) == 1:
+            if current_round["active"] and current_round["prompt"]:
+                emit("chatMessage", {
+                    "type": "reveal",
+                    "word": current_round["prompt"],
+                    "sender_zone": 2
+                }, broadcast=True)
             reset_lobby()
 
             remaining_sid = players_order[0]
@@ -270,6 +275,11 @@ def handle_force_round_end():
 
     current_round["active"] = False
     current_drawer_index = (current_drawer_index + 1) % len(players_order)
+    emit("chatMessage", {
+        "type": "reveal",
+        "word": current_round["prompt"],
+        "sender_zone": 2
+    }, broadcast=True)
     start_new_round()
 
 @socketio.on("chatMessage")
@@ -297,9 +307,10 @@ def handle_chat_message(data):
                 current_round["correct_guessers"].add(sid)
                 players[sid]["score"] += 1
 
-                emit("correctGuess", {
+                emit("chatMessage", {
+                    "type": "correct",
                     "name": name,
-                    "score": players[sid]["score"]
+                    "sender_zone": 2
                 }, broadcast=True)
 
                 # Check if all guessers are done
@@ -307,6 +318,11 @@ def handle_chat_message(data):
                 if len(current_round["correct_guessers"]) == guesser_count:
                     current_round["active"] = False
                     current_drawer_index = (current_drawer_index + 1) % len(players_order)
+                    emit("chatMessage", {
+                        "type": "reveal",
+                        "word": current_round["prompt"],
+                        "sender_zone": 2
+                    }, broadcast=True)
                     start_new_round()
 
             # IMPORTANT: Do NOT send the correct-guess message to Zone 1
