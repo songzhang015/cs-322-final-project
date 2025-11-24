@@ -32,6 +32,8 @@ export function connectToServer(playerData, onConnected) {
 		if (roundTimer) clearInterval(roundTimer);
 		roundTimer = null;
 		roundTimeLeft = 0;
+		
+		setDrawingEnabled(false);
 
 		// Clear timer UI
 		const timerTextEl = document.querySelector(".timer-text");
