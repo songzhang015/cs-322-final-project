@@ -64,23 +64,31 @@ def start_new_round():
     current_round["correct_guessers"] = set()
     current_round["time_started"] = time.time()
 
-    print(f"New round started!")
+    print("Round initializing...")
     print(f"Drawer: {players[drawer_sid]['name']}  Prompt: {prompt}")
 
+    # Immediate UI clear
     emit("clear", {}, broadcast=True)
 
+    # PHASE 1 — Tell clients the round is starting (NO timer, NO tools)
+    emit("roundStarting", {}, broadcast=True)
+
+    # Delay 3 seconds
+    socketio.sleep(3)
+
+    # PHASE 2 — Now actually start round
     for sid in players:
         emit("roundStarted", {
             "role": "drawer" if sid == drawer_sid else "guesser"
         }, room=sid)
 
-    # Drawer
+    # Drawer prompt
     emit("roundPrompt", {
         "role": "drawer",
         "prompt": prompt
     }, room=drawer_sid)
 
-    # Guesser
+    # Guessers get length
     for sid in players:
         if sid != drawer_sid:
             emit("roundPrompt", {
@@ -270,6 +278,9 @@ def handle_clear():
 def handle_force_round_end():
     global current_drawer_index
 
+    if request.sid != current_round["drawer"]:
+        return
+    
     if not current_round["active"]:
         return
 

@@ -96,7 +96,7 @@ export function initChatDOM(chatContainer) {
         chatHistory.scrollTop = chatHistory.scrollHeight;
     });
 
-    socket.on("roundStarted", (data) => {
+    socket.on("roundStarting", () => {
         const sys = document.createElement("div");
         sys.classList.add("chat-system");
         sys.textContent = "New round starting!";

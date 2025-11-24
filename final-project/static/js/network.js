@@ -24,46 +24,99 @@ export function connectToServer(playerData, onConnected) {
 		console.log("Updated player list:", players);
 	});
 
-	// Listen for round start, drawings, guesses
+	// === PHASE 1: roundStarting ===
+	socket.on("roundStarting", () => {
+		console.log("Round is preparing…");
+
+		// Stop timer
+		if (roundTimer) clearInterval(roundTimer);
+		roundTimer = null;
+		roundTimeLeft = 0;
+
+		// Clear timer UI
+		const timerTextEl = document.querySelector(".timer-text");
+		if (timerTextEl) timerTextEl.textContent = "";
+
+		// Clear prompt banner
+		const line1 = document.querySelector(".prompt-line1");
+		const line2 = document.querySelector(".prompt-line2");
+		if (line1) line1.textContent = "";
+		if (line2) line2.textContent = "";
+
+		// Hide draw tools until true round start
+		const toolbar = document.querySelector(".play-drawtools");
+		if (toolbar) {
+			toolbar.classList.add("hidden");
+			toolbar.classList.remove("active");
+		}
+	});
+
+	// === PHASE 2: roundStarted ===
 	socket.on("roundStarted", (data) => {
 		console.log("Round started!", data);
 
-		// Clear timer
+		// Reset timer
 		if (roundTimer) clearInterval(roundTimer);
+		roundTimer = null;
+
 		roundTimeLeft = data.remaining ?? ROUND_TIME;
 
 		const timerTextEl = document.querySelector(".timer-text");
 		if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
 
-		// === TIMER START ===
-		roundTimer = setInterval(() => {
-			roundTimeLeft--;
-			if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
-
-			if (roundTimeLeft <= 0) {
-				clearInterval(roundTimer);
-				socket.emit("forceRoundEnd");
-			}
-		}, 1000);
-
-        const line1 = document.querySelector(".prompt-line1");
-        const line2 = document.querySelector(".prompt-line2");
-
-        if (line1) line1.textContent = "";
-        if (line2) line2.textContent = "";
+		// clear prompt text (roundPrompt will fill it)
+		const line1 = document.querySelector(".prompt-line1");
+		const line2 = document.querySelector(".prompt-line2");
+		if (line1) line1.textContent = "";
+		if (line2) line2.textContent = "";
 
 		const toolbar = document.querySelector(".play-drawtools");
 
-		if (data.role === "drawer") {
+		const isDrawer = data.role === "drawer";
+
+		if (isDrawer) {
 			setDrawingEnabled(true);
-			toolbar.classList.remove("hidden");
-			toolbar.classList.add("active");
+			if (toolbar) {
+				toolbar.classList.remove("hidden");
+				toolbar.classList.add("active");
+			}
+
+			// === ONLY THE DRAWER RUNS THE AUTHORITATIVE TIMER ===
+			roundTimer = setInterval(() => {
+				roundTimeLeft--;
+				if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
+
+				if (roundTimeLeft <= 0) {
+					clearInterval(roundTimer);
+					roundTimer = null;
+
+					// Only drawer ends the round
+					socket.emit("forceRoundEnd");
+				}
+			}, 1000);
 		} else {
+			// Guessers see countdown but do not emit forceRoundEnd
 			setDrawingEnabled(false);
-			toolbar.classList.add("hidden");
-			toolbar.classList.remove("active");
+			if (toolbar) {
+				toolbar.classList.add("hidden");
+				toolbar.classList.remove("active");
+			}
+
+			// === DISPLAY-ONLY TIMER FOR GUESSERS ===
+			roundTimer = setInterval(() => {
+				roundTimeLeft--;
+				if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
+
+				// Guessers DO NOT emit forceRoundEnd
+				if (roundTimeLeft <= 0) {
+					clearInterval(roundTimer);
+					roundTimer = null;
+				}
+			}, 1000);
 		}
 	});
+
+
 
 	socket.on("lobbyReset", () => {
 		console.log("Lobby reset — stopping timer and clearing UI.");
