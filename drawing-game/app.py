@@ -1,16 +1,26 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
+from pymongo import MongoClient
 import random
 import time
+from blueprints.packs.Routes import packs_bp
+from services.PackService import pack_service
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# SID → playerInfo
-players = {}
+ROUND_TOTAL_SECONDS = 100
+CURRENT_PACK = "standard-pack"
+words = pack_service.get_pack(CURRENT_PACK)["words"]
 
-# Maintain strict join order for sequential drawer rotation
+@app.route("/")
+def index():
+    return render_template("index.html"), 200
+
+app.register_blueprint(packs_bp, url_prefix="/api")
+
+players = {}
 players_order = []
 current_drawer_index = 0
 
@@ -22,27 +32,16 @@ current_round = {
     "active": False,
     "correct_guessers": set(),
     "time_started": None,
-
-    # NEW: letter reveal state
     "revealed_indices": set(),
     "max_reveals": 0,
     "guess_reveals_done": 0,
 }
-
-words = [
-    "abcdefghi", "abcdefghi"
-]
-
-# NEW: global round duration for reveal logic (your visual timer can be updated later)
-ROUND_TOTAL_SECONDS = 100
-
 
 # =========================
 #  LETTER REVEAL HELPERS
 # =========================
 
 def compute_max_reveals(word_len: int) -> int:
-    # Minimum 4-letter words in your bank, but we still handle <=4 safely.
     if word_len <= 4:
         return 2
     if word_len == 5:
@@ -57,7 +56,7 @@ def compute_max_reveals(word_len: int) -> int:
         return 6
     if word_len == 10:
         return 6
-    return 7  # 11+
+    return 7
 
 
 def build_masked_word(prompt: str, revealed_indices: set) -> str:
@@ -257,9 +256,7 @@ def start_new_round():
     )
 
 
-@app.route("/")
-def index():
-    return render_template("index.html"), 200
+
 
 
 @socketio.on("join")

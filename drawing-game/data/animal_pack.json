@@ -1,6 +1,5 @@
 {
-    "_id": "animal",
-    "name": "Animal Words",
+    "name": "animal-pack",
     "words": [
         "lion",
         "frog",
