@@ -27,6 +27,23 @@ words = [
     "apple", "computer", "star", "sword"
 ]
 
+def reset_lobby():
+    global current_drawer_index
+
+    current_round["drawer"] = None
+    current_round["prompt"] = None
+    current_round["active"] = False
+    current_round["correct_guessers"] = set()
+    current_round["time_started"] = None
+
+    current_drawer_index = 0
+
+    # Clear canvas for all players
+    emit("clear", {}, broadcast=True)
+
+    # NEW: Tell clients to stop timer & reset header
+    emit("lobbyReset", {}, broadcast=True)
+
 def start_new_round():
     global current_drawer_index
 
@@ -160,7 +177,6 @@ def handle_join(data):
         for p in players.values()
     ], broadcast=True)
 
-
 @socketio.on("disconnect")
 def handle_disconnect():
     global current_drawer_index
@@ -193,6 +209,24 @@ def handle_disconnect():
             }
             for p in players.values()
         ], broadcast=True)
+
+        # >>> NEW BLOCK BELOW <<<
+        # If only ONE player remains → reset to waiting lobby state
+        if len(players_order) == 1:
+            reset_lobby()
+
+            remaining_sid = players_order[0]
+            emit("waitingForPlayers", {
+                "message": "Waiting for one more person..."
+            }, room=remaining_sid)
+
+            return
+
+        # If ZERO players remain → reset everything
+        if len(players_order) == 0:
+            reset_lobby()
+            return
+
 
 @socketio.on("startPath")
 def handle_start_path(data):

@@ -65,6 +65,33 @@ export function connectToServer(playerData, onConnected) {
 		}
 	});
 
+	socket.on("lobbyReset", () => {
+		console.log("Lobby reset — stopping timer and clearing UI.");
+
+		// Stop timer
+		if (roundTimer) clearInterval(roundTimer);
+		roundTimer = null;
+		roundTimeLeft = 0;
+
+		// Clear timer UI
+		const timerTextEl = document.querySelector(".timer-text");
+		if (timerTextEl) timerTextEl.textContent = "";
+
+		// Clear header lines
+		const line1 = document.querySelector(".prompt-line1");
+		const line2 = document.querySelector(".prompt-line2");
+		if (line1) line1.textContent = "";
+		if (line2) line2.textContent = "";
+
+		// Hide draw tools (nobody should be drawing now)
+		const toolbar = document.querySelector(".play-drawtools");
+		if (toolbar) {
+			toolbar.classList.add("hidden");
+			toolbar.classList.remove("active");
+		}
+	});
+
+
 	socket.on("startPath", data => applyRemoteEvent("startPath", data));
 	socket.on("draw", data => applyRemoteEvent("draw", data));
 	socket.on("endPath", () => applyRemoteEvent("endPath"));
