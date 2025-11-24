@@ -75,6 +75,10 @@ export function connectToServer(playerData, onConnected) {
 		const isDrawer = data.role === "drawer";
 
 		if (isDrawer) {
+			if (toolbar && typeof toolbar.regeneratePalette === "function") {
+				toolbar.regeneratePalette();
+			}
+
 			setDrawingEnabled(true);
 			if (toolbar) {
 				toolbar.classList.remove("hidden");
@@ -147,9 +151,11 @@ export function connectToServer(playerData, onConnected) {
 
 	socket.on("startPath", data => applyRemoteEvent("startPath", data));
 	socket.on("draw", data => applyRemoteEvent("draw", data));
+	socket.on("dot", data => applyRemoteEvent("dot", data));
 	socket.on("endPath", () => applyRemoteEvent("endPath"));
 	socket.on("fill", data => applyRemoteEvent("fill", data));
-	socket.on("undo", () => applyRemoteEvent("undo"));
+	socket.on("undo", () => {
+	});
 	socket.on("clear", () => applyRemoteEvent("clear"));
 }
 

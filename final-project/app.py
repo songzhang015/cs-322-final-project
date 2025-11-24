@@ -14,6 +14,8 @@ players = {}
 players_order = []
 current_drawer_index = 0
 
+canvas_history = []
+
 current_round = {
     "drawer": None,
     "prompt": None,
@@ -67,6 +69,7 @@ def start_new_round():
     print("Round initializing...")
     print(f"Drawer: {players[drawer_sid]['name']}  Prompt: {prompt}")
 
+    canvas_history.clear()
     # Immediate UI clear
     emit("clear", {}, broadcast=True)
 
@@ -151,6 +154,8 @@ def handle_join(data):
                 "role": "guesser",
                 "length": len(prompt)
             }, room=sid)
+        for event_type, payload in canvas_history:
+            emit(event_type, payload, room=sid)
 
         emit("playerList", [
             {
@@ -243,16 +248,26 @@ def handle_disconnect():
 
             return
 
+def log_event(event_type, data=None):
+    canvas_history.append((event_type, data or {}))
 
 @socketio.on("startPath")
 def handle_start_path(data):
     if request.sid == current_round["drawer"]:
+        log_event("startPath", data)
         emit("startPath", data, broadcast=True, include_self=False)
 
 @socketio.on("draw")
 def handle_draw(data):
     if request.sid == current_round["drawer"]:
+        log_event("draw", data)
         emit("draw", data, broadcast=True, include_self=False)
+
+@socketio.on("dot")
+def handle_dot(data):
+    if request.sid == current_round["drawer"]:
+        log_event("dot", data)
+        emit("dot", data, broadcast=True, include_self=False)
 
 @socketio.on("endPath")
 def handle_end_path():
@@ -262,16 +277,39 @@ def handle_end_path():
 @socketio.on("fill")
 def handle_fill(data):
     if request.sid == current_round["drawer"]:
+        log_event("fill", data)
         emit("fill", data, broadcast=True, include_self=False)
 
 @socketio.on("undo")
 def handle_undo():
-    if request.sid == current_round["drawer"]:
-        emit("undo", {}, broadcast=True, include_self=False)
+    if request.sid != current_round["drawer"]:
+        return
+
+    # Helper to remove ONE complete operation
+    def pop_one_action():
+        if not canvas_history:
+            return
+        while canvas_history:
+            event_type, _ = canvas_history.pop()
+            if event_type in ("startPath", "dot", "fill"):
+                break
+
+    # Pop TWO full actions instead of one, temp fix undo bug?
+    pop_one_action()
+    pop_one_action()
+
+    # Clear everyone’s canvas
+    emit("clear", {}, broadcast=True)
+
+    # Replay the remaining history
+    for event_type, payload in canvas_history:
+        emit(event_type, payload, broadcast=True)
+
 
 @socketio.on("clear")
 def handle_clear():
     if request.sid == current_round["drawer"]:
+        canvas_history.clear()
         emit("clear", {}, broadcast=True, include_self=False)
 
 @socketio.on("forceRoundEnd")

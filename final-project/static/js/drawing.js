@@ -8,8 +8,6 @@ let lastY = 0;
 let remoteLastX = 0;
 let remoteLastY = 0;
 
-let history = [];
-
 // Updated externally by your UI
 let currentColor = "black";
 let currentSize = 5;
@@ -33,18 +31,11 @@ export function setTool(tool) {
 
 export function clearCanvas() {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    history = [];
 }
 
-function saveState() {
-    history.push(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height));
-}
 
 export function undo() {
-    if (history.length === 0) return;
 
-    const previous = history.pop();
-    ctx.putImageData(previous, 0, 0);
 }
 
 export function initCanvas(canvas, socket) {
@@ -58,7 +49,6 @@ export function initCanvas(canvas, socket) {
     // --- MOUSE EVENTS ---
     canvas.addEventListener("mousedown", (e) => {
         if (!drawingEnabled) return;
-        saveState();
 
         const x = e.offsetX;
         const y = e.offsetY;
@@ -85,26 +75,22 @@ export function initCanvas(canvas, socket) {
 
     canvas.addEventListener("click", (e) => {
         if (!drawingEnabled) return;
-
+        
         const x = e.offsetX;
         const y = e.offsetY;
 
-        // Draw dot locally
         ctx.beginPath();
         ctx.arc(x, y, currentSize / 2, 0, Math.PI * 2);
         ctx.fillStyle = currentTool === "eraser" ? "white" : currentColor;
         ctx.fill();
 
-        // Send to other players
-        socket.emit("startPath", {
+        socket.emit("dot", {
             x,
             y,
             size: currentSize,
             color: currentColor,
             tool: currentTool
         });
-        socket.emit("draw", { x, y });
-        socket.emit("endPath", {});
     });
 
     canvas.addEventListener("mouseup", () => {
@@ -332,9 +318,6 @@ export function loadCanvasFromImage(imgURL) {
 }
 
 export function applyRemoteEvent(type, data) {
-    if (type === "startPath" || type === "fill" || type === "clear") {
-        saveState();
-    }
 
     switch (type) {
         case "startPath":
@@ -353,16 +336,19 @@ export function applyRemoteEvent(type, data) {
             remoteLastY = data.y;
             break;
 
+        case "dot":
+            ctx.beginPath();
+            ctx.arc(data.x, data.y, data.size / 2, 0, Math.PI * 2);
+            ctx.fillStyle = data.tool === "eraser" ? "white" : data.color;
+            ctx.fill();
+            break;
+
         case "endPath":
             break;
 
         case "fill":
             setBrushColor(data.color);
             fillBucket(data.x, data.y);
-            break;
-
-        case "undo":
-            undo();
             break;
 
         case "clear":

@@ -334,7 +334,6 @@ function createTools(drawtools) {
 
 	brushIcon.addEventListener("click", () => {
 		setTool("brush");
-
 		brushIcon.classList.add("selected-tool");
 		eraserIcon.classList.remove("selected-tool");
 		fillIcon.classList.remove("selected-tool");
@@ -342,7 +341,6 @@ function createTools(drawtools) {
 
 	eraserIcon.addEventListener("click", () => {
 		setTool("eraser");
-
 		eraserIcon.classList.add("selected-tool");
 		brushIcon.classList.remove("selected-tool");
 		fillIcon.classList.remove("selected-tool");
@@ -350,7 +348,6 @@ function createTools(drawtools) {
 
 	fillIcon.addEventListener("click", () => {
 		setTool("fill");
-
 		fillIcon.classList.add("selected-tool");
 		brushIcon.classList.remove("selected-tool");
 		eraserIcon.classList.remove("selected-tool");
@@ -370,39 +367,49 @@ function createTools(drawtools) {
 	const currentColor = document.createElement("div");
 	currentColor.classList.add("current-color");
 	colorsContainer.append(currentColor);
-	let defaultPaletteColor = null;
 
-	for (let i = 0; i < 24; i++) {
-		const cell = document.createElement("div");
+    // === NEW: REGENERATABLE PALETTE ===
+	function regeneratePalette() {
+	    colorGrid.innerHTML = "";
+	    let defaultPaletteColor = null;
 
-		const color = randomColor();
-    	cell.style.background = color;
+	    for (let i = 0; i < 24; i++) {
+	        const cell = document.createElement("div");
+	        const color = randomColor(); // your randomColor()
 
-		if (i === 0) {
-			defaultPaletteColor = color;
-		}
+	        cell.style.background = color;
 
-		cell.addEventListener("click", () => {
-			setBrushColor(color);
-			currentColor.style.background = color;
-		});
+	        if (i === 0) defaultPaletteColor = color;
 
-		colorGrid.append(cell);
+	        cell.addEventListener("click", () => {
+	            setBrushColor(color);
+	            currentColor.style.background = color;
+	        });
+
+	        colorGrid.append(cell);
+	    }
+
+	    // Set initial color
+	    setBrushColor(defaultPaletteColor);
+	    currentColor.style.background = defaultPaletteColor;
 	}
 
-	setBrushColor(defaultPaletteColor);
-	currentColor.style.background = defaultPaletteColor;
+	// Generate palette first time
+	regeneratePalette();
 
+	// Make callable from network.js
+	drawtools.regeneratePalette = regeneratePalette;
 
 	// Brush Size Selector
-    const brushSizeSelector = document.createElement("div");
-    brushSizeSelector.classList.add("brush-size-selector");
-    drawtools.append(brushSizeSelector);
+	const brushSizeSelector = document.createElement("div");
+	brushSizeSelector.classList.add("brush-size-selector");
+	drawtools.append(brushSizeSelector);
 
 	for (let i = 1; i <= 8; i++) {
 		const sizeOption = document.createElement("div");
 		sizeOption.classList.add("brush-size-option");
 		sizeOption.dataset.size = i;
+
 		const img = document.createElement("img");
 		img.src = "static/images/dot.png";
 		img.classList.add("brush-size-dot");
@@ -417,15 +424,14 @@ function createTools(drawtools) {
 		sizeOption.addEventListener("click", () => {
 			setBrushSize(sizeMap[i - 1]);
 
-			// Remove selected from all
 			document.querySelectorAll(".brush-size-option")
 				.forEach(option => option.classList.remove("selected"));
 
-			// Highlight clicked
 			sizeOption.classList.add("selected");
 		});
 
 		brushSizeSelector.append(sizeOption);
+
 		if (i === 1) {
 			sizeOption.classList.add("selected");
 			setBrushSize(sizeMap[0]);
@@ -447,7 +453,6 @@ function createTools(drawtools) {
 	undoContainer.append(undoIcon);
 
 	undoContainer.addEventListener("click", () => {
-		undo();
 		const socket = getSocket();
 		if (socket) socket.emit("undo");
 	});
@@ -470,6 +475,7 @@ function createTools(drawtools) {
 	rightGroup.append(undoContainer);
 	rightGroup.append(clearContainer);
 }
+
 
 document.addEventListener("DOMContentLoaded", () => {
 	init();
