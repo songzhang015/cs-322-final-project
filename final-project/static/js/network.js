@@ -2,7 +2,7 @@
 import { applyRemoteEvent, setDrawingEnabled } from "./drawing.js";
 import { updateScoreboard } from "./setup.js";
 
-const ROUND_TIME = 20;
+const ROUND_TIME = 100;
 let socket = null;
 let roundTimer = null;
 let roundStartTime = null; // <-- NEW: Store when round started

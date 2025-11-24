@@ -21,13 +21,149 @@ current_round = {
     "prompt": None,
     "active": False,
     "correct_guessers": set(),
-    "time_started": None
+    "time_started": None,
+
+    # NEW: letter reveal state
+    "revealed_indices": set(),
+    "max_reveals": 0,
+    "guess_reveals_done": 0,
 }
 
 words = [
-    "dog", "cat", "pizza", "house", "car", "tree", "flower", "airplane",
-    "apple", "computer", "star", "sword"
+    "abcdefghi", "abcdefghi"
 ]
+
+# NEW: global round duration for reveal logic (your visual timer can be updated later)
+ROUND_TOTAL_SECONDS = 100
+
+
+# =========================
+#  LETTER REVEAL HELPERS
+# =========================
+
+def compute_max_reveals(word_len: int) -> int:
+    # Minimum 4-letter words in your bank, but we still handle <=4 safely.
+    if word_len <= 4:
+        return 2
+    if word_len == 5:
+        return 3
+    if word_len == 6:
+        return 4
+    if word_len == 7:
+        return 4
+    if word_len == 8:
+        return 5
+    if word_len == 9:
+        return 6
+    if word_len == 10:
+        return 6
+    return 7  # 11+
+
+
+def build_masked_word(prompt: str, revealed_indices: set) -> str:
+    """
+    Returns something like: A _ _ L E  for 'APPLE' with indices {0, 3}.
+    Non-alpha characters (if you add any later) will always show.
+    """
+    chars = []
+    for i, ch in enumerate(prompt):
+        if not ch.isalpha():
+            chars.append(ch)
+        elif i in revealed_indices:
+            chars.append(ch)
+        else:
+            chars.append("_")
+    return " ".join(chars)
+
+
+def reveal_random_letters(num_letters: int):
+    """
+    Core reveal function.
+    - Respects max_reveals cap.
+    - Does not re-reveal already revealed letters.
+    - Broadcasts 'letterReveal' to guessers with the updated mask.
+    """
+    if not current_round["active"] or not current_round["prompt"]:
+        return
+
+    word = current_round["prompt"]
+    word_len = len(word)
+
+    # Consider only alphabetic positions as revealable letters
+    all_positions = [i for i, ch in enumerate(word) if ch.isalpha()]
+    unrevealed = [i for i in all_positions if i not in current_round["revealed_indices"]]
+
+    if not unrevealed:
+        return
+
+    already_revealed_count = len(current_round["revealed_indices"])
+    remaining_capacity = current_round["max_reveals"] - already_revealed_count
+    if remaining_capacity <= 0:
+        return
+
+    to_reveal = min(num_letters, remaining_capacity, len(unrevealed))
+    if to_reveal <= 0:
+        return
+
+    chosen = random.sample(unrevealed, to_reveal)
+    current_round["revealed_indices"].update(chosen)
+
+    masked = build_masked_word(word, current_round["revealed_indices"])
+
+    drawer_sid = current_round["drawer"]
+
+    # Send masked word to all guessers
+    for sid in players:
+        if sid != drawer_sid:
+            socketio.emit("letterReveal", {
+                "mask": masked
+            }, room=sid)
+
+
+def manage_time_reveals(start_time_snapshot: float, word_len: int):
+    """
+    Time-based reveals at remaining 75s, 50s, 25s (assuming 100s total).
+    That corresponds to elapsed times of 25s, 50s, 75s.
+    """
+
+    # (elapsed_target, label)
+    thresholds = [
+        (ROUND_TOTAL_SECONDS - 75, "75"),  # 25s elapsed, 75s remaining
+        (ROUND_TOTAL_SECONDS - 50, "50"),  # 50s elapsed, 50s remaining
+        (ROUND_TOTAL_SECONDS - 25, "25"),  # 75s elapsed, 25s remaining
+    ]
+
+    last_elapsed = 0
+    for elapsed_target, label in thresholds:
+        sleep_for = elapsed_target - last_elapsed
+        if sleep_for > 0:
+            socketio.sleep(sleep_for)
+        last_elapsed = elapsed_target
+
+        # If round ended or a new round started, stop this task
+        if (not current_round["active"] or
+                current_round["time_started"] != start_time_snapshot):
+            return
+
+        # Decide how many letters to reveal per timing rule
+        if label == "75":
+            # Reveal at 75 seconds remaining → 1 letter
+            reveal_random_letters(1)
+
+        elif label == "50":
+            # Reveal at 50 seconds remaining:
+            # Base 1; if length 9+ AND no one has guessed yet → up to 2 letters
+            base = 1
+            extra = 1 if (word_len >= 9 and not current_round["correct_guessers"]) else 0
+            reveal_random_letters(base + extra)
+
+        elif label == "25":
+            # Reveal at 25 seconds remaining:
+            # Base 1; if length 9+ → up to 2 letters
+            base = 1
+            extra = 1 if word_len >= 9 else 0
+            reveal_random_letters(base + extra)
+
 
 def reset_lobby():
     global current_drawer_index
@@ -38,6 +174,11 @@ def reset_lobby():
     current_round["correct_guessers"] = set()
     current_round["time_started"] = None
 
+    # NEW: reset reveal state
+    current_round["revealed_indices"] = set()
+    current_round["max_reveals"] = 0
+    current_round["guess_reveals_done"] = 0
+
     current_drawer_index = 0
 
     # Clear canvas for all players
@@ -45,6 +186,7 @@ def reset_lobby():
 
     # NEW: Tell clients to stop timer & reset header
     emit("lobbyReset", {}, broadcast=True)
+
 
 def start_new_round():
     global current_drawer_index
@@ -64,6 +206,12 @@ def start_new_round():
     current_round["prompt"] = prompt
     current_round["active"] = True
     current_round["correct_guessers"] = set()
+
+    # NEW: init reveal state for this word
+    word_len = len(prompt)
+    current_round["revealed_indices"] = set()
+    current_round["max_reveals"] = compute_max_reveals(word_len)
+    current_round["guess_reveals_done"] = 0
 
     print("Round initializing...")
     print(f"Drawer: {players[drawer_sid]['name']}  Prompt: {prompt}")
@@ -101,10 +249,18 @@ def start_new_round():
                 "length": len(prompt)
             }, room=sid)
 
+    # NEW: start background task for time-based reveals
+    socketio.start_background_task(
+        manage_time_reveals,
+        current_round["time_started"],
+        word_len
+    )
+
 
 @app.route("/")
 def index():
     return render_template("index.html"), 200
+
 
 @socketio.on("join")
 def handle_join(data):
@@ -134,7 +290,7 @@ def handle_join(data):
     # NEW BLOCK: sync late joiner with active round
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     if current_round["active"]:
-        ROUND_TIME = 20
+        ROUND_TIME = 100
 
         elapsed = int(time.time() - current_round["time_started"])
         remaining = max(0, ROUND_TIME - elapsed)
@@ -157,6 +313,14 @@ def handle_join(data):
                 "role": "guesser",
                 "length": len(prompt)
             }, room=sid)
+
+            # NEW: if some letters are already revealed, send current mask to late-joining guesser
+            if current_round["revealed_indices"]:
+                masked = build_masked_word(prompt, current_round["revealed_indices"])
+                emit("letterReveal", {
+                    "mask": masked
+                }, room=sid)
+
         for event_type, payload in canvas_history:
             emit(event_type, payload, room=sid)
 
@@ -192,6 +356,7 @@ def handle_join(data):
         }
         for p in players.values()
     ], broadcast=True)
+
 
 @socketio.on("disconnect")
 def handle_disconnect():
@@ -278,11 +443,13 @@ def handle_disconnect():
 def log_event(event_type, data=None):
     canvas_history.append((event_type, data or {}))
 
+
 @socketio.on("startPath")
 def handle_start_path(data):
     if request.sid == current_round["drawer"]:
         log_event("startPath", data)
         emit("startPath", data, broadcast=True, include_self=False)
+
 
 @socketio.on("draw")
 def handle_draw(data):
@@ -290,22 +457,26 @@ def handle_draw(data):
         log_event("draw", data)
         emit("draw", data, broadcast=True, include_self=False)
 
+
 @socketio.on("dot")
 def handle_dot(data):
     if request.sid == current_round["drawer"]:
         log_event("dot", data)
         emit("dot", data, broadcast=True, include_self=False)
 
+
 @socketio.on("endPath")
 def handle_end_path():
     if request.sid == current_round["drawer"]:
         emit("endPath", {}, broadcast=True, include_self=False)
+
 
 @socketio.on("fill")
 def handle_fill(data):
     if request.sid == current_round["drawer"]:
         log_event("fill", data)
         emit("fill", data, broadcast=True, include_self=False)
+
 
 @socketio.on("undo")
 def handle_undo():
@@ -339,6 +510,7 @@ def handle_clear():
         canvas_history.clear()
         emit("clear", {}, broadcast=True, include_self=False)
 
+
 @socketio.on("forceRoundEnd")
 def handle_force_round_end():
     global current_drawer_index
@@ -358,6 +530,7 @@ def handle_force_round_end():
     }, broadcast=True)
     start_new_round()
 
+
 @socketio.on("chatMessage")
 def handle_chat_message(data):
     global current_drawer_index
@@ -370,12 +543,12 @@ def handle_chat_message(data):
     name = players[sid]["name"]
 
     drawer_sid = current_round["drawer"]
-    prompt = current_round["prompt"].lower()
+    prompt = current_round["prompt"].lower() if current_round["prompt"] else ""
 
     # ------------------------------------------
     # STEP 1 — HANDLE CORRECT GUESS FIRST
     # ------------------------------------------
-    if current_round["active"]:
+    if current_round["active"] and current_round["prompt"]:
         if sid != drawer_sid and message.lower() == prompt:
 
             # Already guessed before? Ignore repeat guesses
@@ -383,7 +556,7 @@ def handle_chat_message(data):
 
                 current_round["correct_guessers"].add(sid)
 
-                ROUND_TIME = 20
+                ROUND_TIME = 100
                 elapsed = time.time() - current_round["time_started"]
                 remaining = max(0, ROUND_TIME - elapsed)
                 percent_left = remaining / ROUND_TIME
@@ -414,9 +587,23 @@ def handle_chat_message(data):
                     for p in players.values()
                 ], broadcast=True)
 
-                # Check if all guessers finished
+                # --- NEW: guess-percentage-based reveals ---
                 guesser_count = len(players_order) - 1
-                if len(current_round["correct_guessers"]) == guesser_count:
+                if guesser_count > 0:
+                    ratio = len(current_round["correct_guessers"]) / guesser_count
+
+                    # 70% threshold → 2nd reveal (if not already done)
+                    if ratio >= 0.7 and current_round["guess_reveals_done"] < 2:
+                        reveal_random_letters(1)
+                        current_round["guess_reveals_done"] = 2
+
+                    # 40% threshold → 1st reveal (if not already done)
+                    elif ratio >= 0.4 and current_round["guess_reveals_done"] < 1:
+                        reveal_random_letters(1)
+                        current_round["guess_reveals_done"] = 1
+
+                # Check if all guessers finished
+                if guesser_count > 0 and len(current_round["correct_guessers"]) == guesser_count:
                     current_round["active"] = False
                     current_drawer_index = (current_drawer_index + 1) % len(players_order)
                     emit("chatMessage", {

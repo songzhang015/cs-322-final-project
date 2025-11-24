@@ -57,6 +57,15 @@ export function initChatDOM(chatContainer) {
         chatHistory.scrollTop = chatHistory.scrollHeight;
     });
 
+    socket.on("letterReveal", (data) => {
+        const line1 = document.querySelector(".prompt-line1");
+        const line2 = document.querySelector(".prompt-line2");
+        if (!line1 || !line2) return;
+
+        line1.textContent = "Guess the word:";
+        line2.textContent = data.mask;
+    });
+
     socket.on("correctGuess", (data) => {
         const sys = document.createElement("div");
         sys.classList.add("chat-system");
