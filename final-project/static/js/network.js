@@ -1,5 +1,6 @@
 // network.js - handles the data syncing between players
 import { applyRemoteEvent, setDrawingEnabled } from "./drawing.js";
+import { updateScoreboard } from "./setup.js";
 
 const ROUND_TIME = 20;
 let socket = null;
@@ -21,7 +22,7 @@ export function connectToServer(playerData, onConnected) {
 
 	// Listen for updated player list
 	socket.on("playerList", (players) => {
-		console.log("Updated player list:", players);
+		updateScoreboard(players);
 	});
 
 	// === PHASE 1: roundStarting ===

@@ -8,6 +8,7 @@ export function initChatDOM(chatContainer) {
     const chatInput = document.createElement("input");
     chatInput.classList.add("chat-input");
     chatInput.placeholder = "Type your guess or message...";
+    chatInput.maxLength = 128;
 
     chatContainer.append(chatHistory, chatInput);
 

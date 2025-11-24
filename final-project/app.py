@@ -136,6 +136,10 @@ def handle_join(data):
         elapsed = int(time.time() - current_round["time_started"])
         remaining = max(0, ROUND_TIME - elapsed)
 
+        remaining += 2
+        if remaining > ROUND_TIME:
+            remaining = ROUND_TIME
+
         drawer_sid = current_round["drawer"]
         prompt = current_round["prompt"]
 
@@ -351,10 +355,26 @@ def handle_chat_message(data):
     if current_round["active"]:
         if sid != drawer_sid and message.lower() == prompt:
 
-            # Already guessed before? Ignore
+            # Already guessed before? Ignore repeat guesses
             if sid not in current_round["correct_guessers"]:
+
                 current_round["correct_guessers"].add(sid)
-                players[sid]["score"] += 1
+
+                ROUND_TIME = 20
+                elapsed = time.time() - current_round["time_started"]
+                remaining = max(0, ROUND_TIME - elapsed)
+                percent_left = remaining / ROUND_TIME
+
+                # Scoring rules
+                if percent_left >= 0.80:
+                    guesser_points = 3
+                elif percent_left >= 0.40:
+                    guesser_points = 2
+                else:
+                    guesser_points = 1
+
+                players[sid]["score"] += guesser_points
+                players[drawer_sid]["score"] += 1  # drawer always +1
 
                 emit("chatMessage", {
                     "type": "correct",
@@ -362,7 +382,16 @@ def handle_chat_message(data):
                     "sender_zone": 2
                 }, broadcast=True)
 
-                # Check if all guessers are done
+                emit("playerList", [
+                    {
+                        "name": p["name"],
+                        "avatar": p["avatar"],
+                        "score": p["score"]
+                    }
+                    for p in players.values()
+                ], broadcast=True)
+
+                # Check if all guessers finished
                 guesser_count = len(players_order) - 1
                 if len(current_round["correct_guessers"]) == guesser_count:
                     current_round["active"] = False
@@ -374,8 +403,8 @@ def handle_chat_message(data):
                     }, broadcast=True)
                     start_new_round()
 
-            # IMPORTANT: Do NOT send the correct-guess message to Zone 1
-            return
+                # IMPORTANT: Do NOT send the correct-guess message to Zone 1
+                return
 
     # ------------------------------------------
     # STEP 2 — ROUTE MESSAGE BASED ON UPDATED ZONES

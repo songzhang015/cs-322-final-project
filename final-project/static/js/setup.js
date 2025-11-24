@@ -53,6 +53,7 @@ function init() {
     nameInput = document.createElement("input");
     nameInput.classList.add("name-input");
     nameInput.placeholder = "Enter your name";
+	nameInput.maxLength = 24;
     form.append(nameInput);
 
     // Avatar Containers
@@ -292,6 +293,58 @@ function initPlayScreen(socket) {
 	initCanvas(canvas, socket);
 	initChatDOM(chat);
 }
+
+export function updateScoreboard(players) {
+    const scoreboard = document.querySelector(".play-scoreboard");
+    if (!scoreboard) return;
+
+    // Clear existing rows
+    scoreboard.innerHTML = "";
+
+    // Sort by score DESC (for now all 0)
+    players.sort((a, b) => b.score - a.score);
+
+    players.forEach(p => {
+        const row = document.createElement("div");
+        row.classList.add("score-row");
+
+        // === Avatar container ===
+        const avatarBox = document.createElement("div");
+        avatarBox.classList.add("score-avatar");
+
+        const base = document.createElement("img");
+        base.src = "static/images/avatar-skeleton.png";
+
+        const colorImg = document.createElement("img");
+        colorImg.src = `static/images/colors/color-avatar-${p.avatar.color}.png`;
+
+        const eyeImg = document.createElement("img");
+        eyeImg.src = `static/images/eyes/eye-avatar-${p.avatar.eye}.png`;
+
+        const mouthImg = document.createElement("img");
+        mouthImg.src = `static/images/mouths/mouth-avatar-${p.avatar.mouth}.png`;
+
+        avatarBox.append(base, colorImg, eyeImg, mouthImg);
+
+        // === Text container ===
+        const textBox = document.createElement("div");
+        textBox.classList.add("score-text");
+
+        const nameEl = document.createElement("div");
+        nameEl.classList.add("score-name");
+        nameEl.textContent = p.name;
+
+        const scoreEl = document.createElement("div");
+        scoreEl.classList.add("score-points");
+        scoreEl.textContent = `${p.score} points`;
+
+        textBox.append(nameEl, scoreEl);
+
+        row.append(avatarBox, textBox);
+        scoreboard.append(row);
+    });
+}
+
 
 function createTools(drawtools) {
 	// Contains brush, eraser, fill bucket
