@@ -64,7 +64,6 @@ def start_new_round():
     current_round["prompt"] = prompt
     current_round["active"] = True
     current_round["correct_guessers"] = set()
-    current_round["time_started"] = time.time()
 
     print("Round initializing...")
     print(f"Drawer: {players[drawer_sid]['name']}  Prompt: {prompt}")
@@ -79,10 +78,13 @@ def start_new_round():
     # Delay 3 seconds
     socketio.sleep(3)
 
-    # PHASE 2 — Now actually start round
+    current_round["time_started"] = time.time()
+
+    # PHASE 2 — Now actually start round with timestamp
     for sid in players:
         emit("roundStarted", {
-            "role": "drawer" if sid == drawer_sid else "guesser"
+            "role": "drawer" if sid == drawer_sid else "guesser",
+            "startTime": current_round["time_started"]  # <-- ADDED
         }, room=sid)
 
     # Drawer prompt
@@ -98,6 +100,7 @@ def start_new_round():
                 "role": "guesser",
                 "length": len(prompt)
             }, room=sid)
+
 
 @app.route("/")
 def index():
@@ -136,16 +139,12 @@ def handle_join(data):
         elapsed = int(time.time() - current_round["time_started"])
         remaining = max(0, ROUND_TIME - elapsed)
 
-        remaining += 2
-        if remaining > ROUND_TIME:
-            remaining = ROUND_TIME
-
         drawer_sid = current_round["drawer"]
         prompt = current_round["prompt"]
 
         emit("roundStarted", {
             "role": "drawer" if sid == drawer_sid else "guesser",
-            "remaining": remaining
+            "startTime": current_round["time_started"]  # <-- ADD THIS INSTEAD
         }, room=sid)
 
         if sid == drawer_sid:

@@ -1,11 +1,11 @@
-// network.js - handles the data syncing between players
+// network.js - Updated timer logic
 import { applyRemoteEvent, setDrawingEnabled } from "./drawing.js";
 import { updateScoreboard } from "./setup.js";
 
 const ROUND_TIME = 20;
 let socket = null;
 let roundTimer = null;
-let roundTimeLeft = ROUND_TIME;
+let roundStartTime = null; // <-- NEW: Store when round started
 
 export function connectToServer(playerData, onConnected) {
     socket = io();
@@ -20,19 +20,17 @@ export function connectToServer(playerData, onConnected) {
         if (onConnected) onConnected(socket);
     });
 
-	// Listen for updated player list
 	socket.on("playerList", (players) => {
 		updateScoreboard(players);
 	});
 
-	// === PHASE 1: roundStarting ===
 	socket.on("roundStarting", () => {
 		console.log("Round is preparing…");
 
 		// Stop timer
 		if (roundTimer) clearInterval(roundTimer);
 		roundTimer = null;
-		roundTimeLeft = 0;
+		roundStartTime = null;
 		
 		setDrawingEnabled(false);
 
@@ -46,7 +44,6 @@ export function connectToServer(playerData, onConnected) {
 		if (line1) line1.textContent = "";
 		if (line2) line2.textContent = "";
 
-		// Hide draw tools until true round start
 		const toolbar = document.querySelector(".play-drawtools");
 		if (toolbar) {
 			toolbar.classList.add("hidden");
@@ -54,27 +51,18 @@ export function connectToServer(playerData, onConnected) {
 		}
 	});
 
-	// === PHASE 2: roundStarted ===
 	socket.on("roundStarted", (data) => {
 		console.log("Round started!", data);
 
-		// Reset timer
+		// Stop any existing timer
 		if (roundTimer) clearInterval(roundTimer);
 		roundTimer = null;
 
-		roundTimeLeft = data.remaining ?? ROUND_TIME;
+		// Store when the round started (server timestamp in seconds)
+		roundStartTime = data.startTime;
 
 		const timerTextEl = document.querySelector(".timer-text");
-		if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
-
-		// clear prompt text (roundPrompt will fill it)
-		const line1 = document.querySelector(".prompt-line1");
-		const line2 = document.querySelector(".prompt-line2");
-		if (line1) line1.textContent = "";
-		if (line2) line2.textContent = "";
-
 		const toolbar = document.querySelector(".play-drawtools");
-
 		const isDrawer = data.role === "drawer";
 
 		if (isDrawer) {
@@ -87,63 +75,55 @@ export function connectToServer(playerData, onConnected) {
 				toolbar.classList.remove("hidden");
 				toolbar.classList.add("active");
 			}
-
-			// === ONLY THE DRAWER RUNS THE AUTHORITATIVE TIMER ===
-			roundTimer = setInterval(() => {
-				roundTimeLeft--;
-				if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
-
-				if (roundTimeLeft <= 0) {
-					clearInterval(roundTimer);
-					roundTimer = null;
-
-					// Only drawer ends the round
-					socket.emit("forceRoundEnd");
-				}
-			}, 1000);
 		} else {
-			// Guessers see countdown but do not emit forceRoundEnd
 			setDrawingEnabled(false);
 			if (toolbar) {
 				toolbar.classList.add("hidden");
 				toolbar.classList.remove("active");
 			}
-
-			// === DISPLAY-ONLY TIMER FOR GUESSERS ===
-			roundTimer = setInterval(() => {
-				roundTimeLeft--;
-				if (timerTextEl) timerTextEl.textContent = roundTimeLeft;
-
-				// Guessers DO NOT emit forceRoundEnd
-				if (roundTimeLeft <= 0) {
-					clearInterval(roundTimer);
-					roundTimer = null;
-				}
-			}, 1000);
 		}
+
+		// === NEW: CALCULATED TIMER (works for both drawer and guessers) ===
+		function updateTimer() {
+			const now = Date.now() / 1000; // Current time in seconds
+			const elapsed = now - roundStartTime;
+			const remaining = Math.max(0, Math.ceil(ROUND_TIME - elapsed));
+
+			if (timerTextEl) timerTextEl.textContent = remaining;
+
+			// Only drawer emits round end
+			if (remaining <= 0) {
+				clearInterval(roundTimer);
+				roundTimer = null;
+				
+				if (isDrawer) {
+					socket.emit("forceRoundEnd");
+				}
+			}
+		}
+
+		// Update immediately
+		updateTimer();
+
+		// Then update every 100ms for smooth countdown
+		roundTimer = setInterval(updateTimer, 100);
 	});
-
-
 
 	socket.on("lobbyReset", () => {
 		console.log("Lobby reset — stopping timer and clearing UI.");
 
-		// Stop timer
 		if (roundTimer) clearInterval(roundTimer);
 		roundTimer = null;
-		roundTimeLeft = 0;
+		roundStartTime = null;
 
-		// Clear timer UI
 		const timerTextEl = document.querySelector(".timer-text");
 		if (timerTextEl) timerTextEl.textContent = "";
 
-		// Clear header lines
 		const line1 = document.querySelector(".prompt-line1");
 		const line2 = document.querySelector(".prompt-line2");
 		if (line1) line1.textContent = "";
 		if (line2) line2.textContent = "";
 
-		// Hide draw tools (nobody should be drawing now)
 		const toolbar = document.querySelector(".play-drawtools");
 		if (toolbar) {
 			toolbar.classList.add("hidden");
@@ -151,18 +131,15 @@ export function connectToServer(playerData, onConnected) {
 		}
 	});
 
-
 	socket.on("startPath", data => applyRemoteEvent("startPath", data));
 	socket.on("draw", data => applyRemoteEvent("draw", data));
 	socket.on("dot", data => applyRemoteEvent("dot", data));
 	socket.on("endPath", () => applyRemoteEvent("endPath"));
 	socket.on("fill", data => applyRemoteEvent("fill", data));
-	socket.on("undo", () => {
-	});
+	socket.on("undo", () => {});
 	socket.on("clear", () => applyRemoteEvent("clear"));
 }
 
-// Export socket so other modules can emit events
 export function getSocket() {
 	return socket;
 }
