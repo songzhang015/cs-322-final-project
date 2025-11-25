@@ -15,12 +15,11 @@ class Connection:
 
     def __init_conn(self):
         MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/appdb")
-        return MongoClient(MONGO_URI)
-        # return MongoClient(
-        #     MONGO_URI,
-        #     tls=True,
-        #     tlsCAFile=certifi.where()
-        # )
+        return MongoClient(
+            MONGO_URI,
+            tls=True,
+            tlsCAFile=certifi.where()
+        )
 
     def gather_session(self):
         return self.__connection
