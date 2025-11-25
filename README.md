@@ -1,5 +1,3 @@
-https://bitbucket.org/zhang_song_1/cs-322-final-project/
-
 # CS 322 MVP Project - Drawing Game
 
 Drawing Game is an online multiplayer drawing and guessing game where one player sketches a word and the others must correctly guess the word being drawn.
