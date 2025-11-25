@@ -3,7 +3,6 @@ from extensions.socketio import socketio
 from blueprints.packs.Routes import packs_bp
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "secret!"
 socketio.init_app(app)
 app.register_blueprint(packs_bp, url_prefix="/api")
 

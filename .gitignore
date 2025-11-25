@@ -51,3 +51,6 @@ Thumbs.db
 # Project planning files
 project-plan*.png
 run.bat
+
+# Environment files
+.env
