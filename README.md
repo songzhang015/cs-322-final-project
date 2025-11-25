@@ -38,6 +38,6 @@ To deploy it online, I highly recommend creating an online DB at `https://www.mo
 and creating a .env file with MONGO_URI=[URI HERE]. The backend will automatically detect MONGO_URI. Then, remove the current `return MongoClient...` with the uncommented
 `return MongoClient...`.
 
-A deployed version can be found at . . . (not completed yet)
+A deployed version can be found at https://cs-322-drawing-game.onrender.com/
 
 Note: It takes ~30 seconds to start the server up from inactivity.
