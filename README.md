@@ -16,7 +16,19 @@ This project is intended to be the MVP for CS 322 at the University of Oregon.
 This version is built using the concepts taught in the CS 322 course and uses HTML, CSS, and Javascript in the frontend.
 The backend is built using Flask, and saves data using MongoDB. Docker is used to containerize and run the database and frontend/backend.
 
-The main technical challenges were syncing activity between all the players, ensuring the drawing, buttons, timers, and prompts were all accurate.
+The main technical challenges were syncing activity between all the players and ensuring the drawing, buttons, timers, and prompts were all accurate for all players.
+
+This project helped me learn about real-time events and the components that go into a game like this.
+
+- Socket.IO events and their design
+
+- State management for rooms, timers, players, chat
+
+- Server vs. client authority, who knows what and how each component can and cannot interact with others
+
+- Various mechanisms such as point systems, word banks, hint reveal systems
+
+- Challenges with UI and UX design, how to make components look and function well individually and as a whole
 
 AI (OpenAI's ChatGPT 5.1) was used mainly on the frontend to implement a lot of the logic with SocketIO which is relatively new to me.
 
