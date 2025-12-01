@@ -3,7 +3,7 @@
 Drawing Game is an online multiplayer drawing and guessing game where one player sketches a word and the others must correctly guess the word being drawn.
 This serves to be a MVP to be built upon at a later date.
 
-Last Updated: 11/26/2025
+Last Updated: 12/01/2025
 
 Author: Song Zhang
 
