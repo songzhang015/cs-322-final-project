@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 from flask import Flask, render_template
 from extensions.socketio import socketio
 from blueprints.packs.Routes import packs_bp
@@ -10,8 +12,6 @@ socketio_app = app
 
 # Import socketIO events after loading app
 import game.events
-
-
 
 @app.route("/")
 def index():
