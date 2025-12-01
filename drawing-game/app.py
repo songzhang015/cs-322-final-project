@@ -6,9 +6,12 @@ import os
 app = Flask(__name__)
 socketio.init_app(app)
 app.register_blueprint(packs_bp, url_prefix="/api")
+socketio_app = app
 
 # Import socketIO events after loading app
 import game.events
+
+
 
 @app.route("/")
 def index():
